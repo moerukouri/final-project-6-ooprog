@@ -1,3 +1,8 @@
 {
-    "java.project.sourcePaths": ["pharmacy"]
+    "java.project.sourcePaths": [
+        "pharmacy",
+        "src",
+        "src\\pharmacy"
+    ],
+    "java.project.referencedLibraries": []
 }
