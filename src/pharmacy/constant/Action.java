@@ -9,7 +9,6 @@ public enum Action {
     GENERATE_REPORTS("Generate Report"),
     VIEW_ALL_MEDICINE("View All Medicine"),
     ADD_MEDICINE("Add Medicine"),
-    VIEW_MEDICINE("View Medicine"),
     SEARCH_MEDICINE("Search Medicine"),
     UPDATE_MEDICINE("Update Medicine"),
     DELETE_MEDICINE("Delete Medicine"),
