@@ -18,7 +18,7 @@ public class Display {
     public static void title(String title) {
         println();
         println("=".repeat(PADDING * 2 + title.length()));
-        println(" ".repeat(PADDING) + title + " ".repeat(PADDING));
+        println(" ".repeat(PADDING) + title.toUpperCase() + " ".repeat(PADDING));
         println("=".repeat(PADDING * 2 + title.length()));
         println();
     }
