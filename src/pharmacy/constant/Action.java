@@ -19,6 +19,7 @@ public enum Action {
     SEARCH_USER("Search User"),
     UPDATE_USER("Update User"),
     DELETE_USER("Delete User"),
+    UPDATE_OWN_ACCOUNT("Update My Account"),
     CHANGE_OWN_PASSWORD("Change My Password");
 
     private final String label;
