@@ -1,4 +1,4 @@
-package constant;
+package strategy;
 
 public enum Action {
     LOGIN("Login"),
