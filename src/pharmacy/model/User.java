@@ -3,12 +3,14 @@ package model;
 public abstract class User {
     private final String userId;
     private String username;
+    private String fullName;
     private String passwordHash;
     private AccountStatus status;
 
-    protected User(String userId, String username, String passwordHash, AccountStatus status) {
+    protected User(String userId, String username, String fullName, String passwordHash, AccountStatus status) {
         this.userId = userId;
         setUsername(username);
+        setFullName(fullName);
         setPasswordHash(passwordHash);
         setStatus(status);
     }
@@ -21,6 +23,10 @@ public abstract class User {
         return username;
     }
 
+    public String getFullName() {
+        return fullName;
+    }
+
     public String passwordHash() {
         return passwordHash;
     }
@@ -31,6 +37,10 @@ public abstract class User {
 
     public final void setUsername(String username) {
         this.username = username;
+    }
+
+    public final void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public final void setPasswordHash(String passwordHash) {
