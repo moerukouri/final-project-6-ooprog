@@ -1,0 +1,30 @@
+package constant;
+
+public enum Action {
+    LOGIN("Login"),
+    LOGOUT("Logout"),
+    RECORD_TRANSACTION("Record Transaction"),
+    VIEW_OWN_SALES("View Own Sales"),
+    VIEW_ALL_SALES("View All Sales"),
+    GENERATE_REPORTS("Generate Report"),
+    VIEW_ALL_MEDICINE("View All Medicine"),
+    ADD_MEDICINE("Add Medicine"),
+    VIEW_MEDICINE("View Medicine"),
+    SEARCH_MEDICINE("Search Medicine"),
+    UPDATE_MEDICINE("Update Medicine"),
+    DELETE_MEDICINE("Delete Medicine"),
+    ADD_USER("Add User"),
+    VIEW_ALL_USERS("View All Users"),
+    SEARCH_USER("Search User"),
+    UPDATE_USER("Update User"),
+    DELETE_USER("Delete User");
+
+    private final String label;
+    private Action(String label) {
+        this.label = label;
+    }
+
+    public String getLabel() {
+        return this.label;
+    }
+}
