@@ -1,0 +1,102 @@
+package repository;
+
+import io.FileCreator;
+import io.FileHandler;
+import io.FilePath;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import model.Medicine;
+
+public class MedicineRepository {
+    private static final int FIELD_COUNT = 9;
+    private static final String MEDICINE_PATH = FilePath.MEDICINE_PATH.getFilePath();
+
+    public MedicineRepository() {
+        FileCreator.getInstance().createMedicineFile();
+    }
+
+    public List<Medicine> findAll() {
+        List<Medicine> medicines = new ArrayList<>();
+        for (String line : FileHandler.retrieve(MEDICINE_PATH)) {
+            if (line.isBlank() ||line.startsWith("#")) {
+                continue;
+            }
+            try {
+                medicines.add(parse(line));
+            } catch (Exception e) { // ADD EXCEPTION
+                System.err.println("[warn] Skipping malformed medicine record: " + line);
+            }
+        }
+        return medicines;
+    }
+    
+    public Optional<Medicine> findByMedicineId(String medicineId) {
+        for (Medicine medicine : findAll()) {
+            if (medicine.getMedicineId().equals(medicineId)) {
+                return Optional.of(medicine);
+            }
+        }
+        return Optional.empty();
+    }
+    
+    public String nextMedicineId() {
+        int max = 0;
+        for (Medicine medicine : findAll()) {
+            max = Math.max(max, numericSuffix(medicine.getMedicineId()));
+        }
+        return String.format("M%04d", max + 1);
+    }
+
+    public void add(Medicine medicine) {
+        FileHandler.write(serialize(medicine), MEDICINE_PATH, true);
+    }
+
+    public void update(Medicine medicine) {
+        String oldLine = FileHandler.retrieveLine(medicine.getMedicineId(), 0, MEDICINE_PATH);
+        if (oldLine == null || !FileHandler.update(oldLine, serialize(medicine), MEDICINE_PATH)) {
+            throw new IllegalArgumentException("Medicine " + medicine.getMedicineId() + " not found."); // ADD EXCEPTION
+        }
+    }
+
+    public void removeById(String medicineId) {
+        String line = FileHandler.retrieveLine(medicineId, 0, MEDICINE_PATH);
+        if (line == null || !FileHandler.delete(line, MEDICINE_PATH)) {
+            throw new IllegalArgumentException("Medicine " + medicineId + " not found."); // ADD EXCEPTION
+        }
+    }
+ 
+    private static int numericSuffix(String id) {
+        try {
+            return Integer.parseInt(id.substring(1));
+        } catch (NumberFormatException | StringIndexOutOfBoundsException e) { // ADD EXCEPTION ?
+            return 0;
+        }
+    }
+ 
+    private static Medicine parse(String line) {
+        String[] f = line.split("\\|", -1);
+        if (f.length != FIELD_COUNT) {
+            throw new IllegalArgumentException("Expected " + FIELD_COUNT + " fields, got " + f.length); // ADD EXCEPTION
+        }
+        String id = f[0].trim();
+        String batch = f[1].trim();
+        String name = f[2].trim();
+        String category = f[3].trim();
+        double unitPrice = Double.parseDouble(f[4].trim());
+        int quantity = Integer.parseInt(f[5].trim());
+        int minStock = Integer.parseInt(f[6].trim());
+        LocalDate expiration = LocalDate.parse(f[7].trim());
+        boolean active = f[8].trim().equalsIgnoreCase("ACTIVE");
+        if (id.isBlank() || name.isBlank()) {
+            throw new IllegalArgumentException("Empty required fields in medicine record."); // ADD EXCEPTION
+        }
+        return new Medicine(id, batch, name, category, unitPrice, quantity, minStock, expiration, active);
+    }
+ 
+    private static String serialize(Medicine medicine) {
+        return String.join("|", medicine.getMedicineId(), medicine.getBatchNumber(), medicine.getName(), medicine.getCategory(), String.format(Locale.ROOT, "%.2f", medicine.getUnitPrice()), String.valueOf(medicine.getQuantity()), String.valueOf(medicine.getMinStockLevel()), medicine.getExpirationDate().toString(), medicine.isActive() ? "ACTIVE" : "INACTIVE");
+    }
+}
