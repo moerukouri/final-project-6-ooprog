@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public class FileCreator {
     private FileCreator() {} 
-    private final FileCreator INSTANCE = new FileCreator();
+    private static final FileCreator INSTANCE = new FileCreator();
     private final String operation = Operation.CREATE.getOperation();
 
     private final String usersPath = FilePath.USERS_PATH.getFilePath();
@@ -19,15 +19,14 @@ public class FileCreator {
     private final File medicineFile = new File(medicinePath);
     private final File auditFile = new File(auditPath);
 
-    public FileCreator getInstance() {
+    public static FileCreator getInstance() {
         return INSTANCE;
     }
 
     public void createUsersFile() {
         try {
-            if (usersFile.createNewFile()) {
-                
-            }
+            usersFile.getParentFile().mkdirs();
+            usersFile.createNewFile();
         } catch (IOException e) {
             throw new FileStorageException(operation, usersPath);
         }
@@ -35,9 +34,8 @@ public class FileCreator {
 
     public void createSalesFile() {
         try {
-            if (salesFile.createNewFile()) {
-
-            }
+            salesFile.getParentFile().mkdirs();
+            salesFile.createNewFile();
         } catch (IOException e) {
             throw new FileStorageException(operation, salesPath);
         }
@@ -45,9 +43,8 @@ public class FileCreator {
 
     public void createMedicineFile() {
         try {
-            if (medicineFile.createNewFile()) {
-
-            }
+            medicineFile.getParentFile().mkdirs();
+            medicineFile.createNewFile();
         } catch (IOException e) {
             throw new FileStorageException(operation, medicinePath);
         }
@@ -55,9 +52,8 @@ public class FileCreator {
 
     public void createAuditFile() {
         try {
-            if (auditFile.createNewFile()) {
-
-            }
+            auditFile.getParentFile().mkdirs();
+            auditFile.createNewFile();
         } catch (IOException e) {
             throw new FileStorageException(operation, auditPath);
         }
