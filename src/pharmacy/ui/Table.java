@@ -6,6 +6,8 @@ import model.Medicine;
 import model.Sale;
 
 public class Table {
+    private Table() {} // Prevents Instantiation
+    
     public static void users(ArrayList<User> users) {
         String[] fields = TableField.USERS.getFields();
         int[] widths = calculateUserColumnWidths(users, fields);

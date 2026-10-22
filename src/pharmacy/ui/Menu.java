@@ -1,6 +1,8 @@
 package ui;
 
 public class Menu {
+    private Menu() {} // Prevents Instantiation
+    
     public static void admin() {
         Display.title("ADMIN DASHBOARD");
         

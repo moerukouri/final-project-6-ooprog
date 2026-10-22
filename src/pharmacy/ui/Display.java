@@ -1,6 +1,7 @@
 package ui;
 
 public class Display {
+    private Display() {} // Prevents Instantiation
     private static final int PADDING = 3;
     
     public static void println(String string) {
