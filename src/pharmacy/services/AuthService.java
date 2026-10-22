@@ -13,17 +13,12 @@ public class AuthService {
 
     public User login(String username, String password) {
         if (username == null || username.isBlank() || password == null || password.isEmpty()) {
-            throw new AuthenticationException(username);
+            throw new AuthenticationException();
         }
 
-
-        // FIXXXXXXXXXXXXXX 
-        User user = users.findByUsername(username).orElseThrow(() -> new AuthenticationException("Invalid username or password."));
-        
-
-        // FIXXXXXXXXXXXX
+        User user = users.findByUsername(username).orElseThrow(() -> new AuthenticationException());
         if (!user.isActive()) {
-            throw new AuthenticationException("This account is deactivated. Ask an administrator to reactivate it.");
+            throw new AuthenticationException(username);
         }
 
         if (!user.checkPassword(password)) {
