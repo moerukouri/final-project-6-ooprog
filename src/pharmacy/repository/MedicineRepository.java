@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+
+import exception.FileStorageException;
+import exception.IllegalMedicineException;
 import model.Medicine;
 
 public class MedicineRepository {
@@ -20,16 +23,19 @@ public class MedicineRepository {
 
     public List<Medicine> findAll() {
         List<Medicine> medicines = new ArrayList<>();
+        
         for (String line : FileHandler.retrieve(MEDICINE_PATH)) {
             if (line.isBlank() ||line.startsWith("#")) {
                 continue;
             }
+            
             try {
                 medicines.add(parse(line));
-            } catch (Exception e) { // ADD EXCEPTION
-                System.err.println("[warn] Skipping malformed medicine record: " + line);
+            } catch (FileStorageException e) {
+                System.err.println("[Warn] Skipping malformed medicine record: " + line);
             }
         }
+        
         return medicines;
     }
     
@@ -39,14 +45,17 @@ public class MedicineRepository {
                 return Optional.of(medicine);
             }
         }
+        
         return Optional.empty();
     }
     
     public String nextMedicineId() {
         int max = 0;
+        
         for (Medicine medicine : findAll()) {
             max = Math.max(max, numericSuffix(medicine.getMedicineId()));
         }
+        
         return String.format("M%04d", max + 1);
     }
 
@@ -56,43 +65,50 @@ public class MedicineRepository {
 
     public void update(Medicine medicine) {
         String oldLine = FileHandler.retrieveLine(medicine.getMedicineId(), 0, MEDICINE_PATH);
+        
         if (oldLine == null || !FileHandler.update(oldLine, serialize(medicine), MEDICINE_PATH)) {
-            throw new IllegalArgumentException("Medicine " + medicine.getMedicineId() + " not found."); // ADD EXCEPTION
+            throw new IllegalMedicineException(medicine.getMedicineId());
         }
     }
 
     public void removeById(String medicineId) {
         String line = FileHandler.retrieveLine(medicineId, 0, MEDICINE_PATH);
+        
         if (line == null || !FileHandler.delete(line, MEDICINE_PATH)) {
-            throw new IllegalArgumentException("Medicine " + medicineId + " not found."); // ADD EXCEPTION
+            throw new IllegalMedicineException(medicineId);
         }
     }
  
     private static int numericSuffix(String id) {
         try {
             return Integer.parseInt(id.substring(1));
-        } catch (NumberFormatException | StringIndexOutOfBoundsException e) { // ADD EXCEPTION ?
-            return 0;
+        } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+            throw new IllegalMedicineException();
         }
     }
  
     private static Medicine parse(String line) {
         String[] f = line.split("\\|", -1);
+        
         if (f.length != FIELD_COUNT) {
-            throw new IllegalArgumentException("Expected " + FIELD_COUNT + " fields, got " + f.length); // ADD EXCEPTION
+            throw new FileStorageException(line);
         }
         String id = f[0].trim();
         String batch = f[1].trim();
         String name = f[2].trim();
         String category = f[3].trim();
+        
         double unitPrice = Double.parseDouble(f[4].trim());
         int quantity = Integer.parseInt(f[5].trim());
         int minStock = Integer.parseInt(f[6].trim());
+        
         LocalDate expiration = LocalDate.parse(f[7].trim());
         boolean active = f[8].trim().equalsIgnoreCase("ACTIVE");
+        
         if (id.isBlank() || name.isBlank()) {
-            throw new IllegalArgumentException("Empty required fields in medicine record."); // ADD EXCEPTION
+            throw new FileStorageException(line);
         }
+        
         return new Medicine(id, batch, name, category, unitPrice, quantity, minStock, expiration, active);
     }
  

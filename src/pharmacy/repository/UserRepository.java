@@ -6,6 +6,9 @@ import io.FilePath;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import exception.FileStorageException;
+import exception.IllegalUserException;
 import model.AccountStatus;
 import model.Admin;
 import model.Role;
@@ -22,16 +25,19 @@ public class UserRepository {
 
     public List<User> findAll() { 
         List<User> users = new ArrayList<>();
+        
         for(String line : FileHandler.retrieve(USERS_PATH)) {
             if (line.isBlank() || line.startsWith("#")){
                 continue;
             }
+            
             try {
                 users.add(parse(line));
-            } catch (Exception e) { // ADD EXCEPTION
-                System.err.println("[warn] Skipping malformed user record: " + line);
+            } catch (FileStorageException e) { 
+                System.err.println("[Warn] Skipping malformed user record: " + line);
             }
         }
+
         return users;
     }
 
@@ -46,14 +52,17 @@ public class UserRepository {
                 return Optional.of(user);
             }
         }
+        
         return Optional.empty();
     }
 
     public String nextUserId() {
         int max = 0;
+        
         for (User user : findAll()){
             max = Math.max(max, numericSuffix(user.getUserId()));
         }
+        
         return String.format("U%04d", max + 1);
     }
 
@@ -63,34 +72,41 @@ public class UserRepository {
 
     public void replace(String userId, User replacement) {
         String oldLine = FileHandler.retrieveLine(userId, 0, USERS_PATH);
+        
         if  (oldLine == null || !FileHandler.update(oldLine, serialize(replacement), USERS_PATH)){
-            throw new IllegalArgumentException("User" + userId + "not found."); // ADD EXCEPTION
+            throw new IllegalUserException(userId);
         }
     }
 
     private static int numericSuffix(String id) {
         try {
             return Integer.parseInt(id.substring(1));
-        } catch (Exception e) { //ADD EXCEPTION
-            return 0;
+        } catch (NumberFormatException e) {
+            throw new IllegalUserException();
         }
     }
 
     private static User parse(String line) {
         String[] f = line.split("\\|", -1);
-        if(f.length != FIELD_COUNT) {
-            throw new IllegalArgumentException("Expected " + FIELD_COUNT + " fields, got " + f.length); // ADD EXCEPTION
+        
+        if (f.length != FIELD_COUNT) {
+            throw new FileStorageException(line);
         }
+        
         String userId = f[0].trim();
         String username = f[1].trim();
         String fullName = f[2].trim();
+        
         Role role = Role.valueOf(f[3].trim().toUpperCase());
         AccountStatus status = AccountStatus.valueOf(f[4].trim().toUpperCase());
+        
         String passwordHash = f[5];
         String salt = f[6];
+        
         if (userId.isBlank() || username.isBlank() || fullName.isBlank() || passwordHash.isBlank() || salt.isBlank()) {
-            throw new IllegalArgumentException("Empty required fields in user record."); // ADD EXCEPTION
+            throw new FileStorageException(line);
         }
+        
         return role == Role.ADMIN ? new Admin(userId, username, fullName, passwordHash, salt, status) : new Staff(userId, username, fullName, passwordHash, salt, status);
     }
 
