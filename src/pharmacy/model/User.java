@@ -1,6 +1,7 @@
 package model;
 
 import strategy.AccessStrategy;
+import util.PasswordHasher;
 
 public abstract class User {
     private final String userId;
