@@ -36,7 +36,7 @@ public class UserRepository {
     }
 
     public Optional<User> findById(String userId) {
-        String line = FileHandler.retrieveLine(userId, 0, userId);
+        String line = FileHandler.retrieveLine(userId, 0, USERS_PATH);
         return line == null ? Optional.empty() : Optional.of(parse(line));
     }
 
