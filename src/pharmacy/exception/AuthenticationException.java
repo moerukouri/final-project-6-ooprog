@@ -6,6 +6,6 @@ public class AuthenticationException extends RuntimeException {
     }
 
     public AuthenticationException(String username) {
-        super(String.format("Error: Authentication failed for %s. Please check your credentials.", username));
+        super(String.format("Error: Authentication failed for %s. Please check your credentials or status.", username));
     }
 }
