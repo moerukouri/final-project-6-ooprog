@@ -94,6 +94,6 @@ public class UserRepository {
     }
 
     private static String serialize(User user) {
-        return String.join("|", user.getUserId(), user.getUsername(), user.getFullName(), user.getRole().name(), user.getStatus().name(), user.passwordHash());
+        return String.join("|", user.getUserId(), user.getUsername(), user.getFullName(), user.getRole().getLabel(), user.getStatus().getLabel(), user.passwordHash());
     }
 }

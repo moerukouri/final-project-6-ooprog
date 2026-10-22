@@ -29,7 +29,7 @@ public class Sale {
 
     public static Sale fromFile(String saleId, LocalDateTime timestamp, String cashierId, double storedTotal) {
         Sale sale = new Sale(saleId, timestamp, cashierId);
-        sale.storedTotal = storedTotal;
+        sale.setStoredTotal(storedTotal);
         return sale;
     }
 
@@ -42,7 +42,11 @@ public class Sale {
         this.totalAmount = total;
     }
 
-    public double storedTotal() {
+    public void setStoredTotal(double storedTotal) {
+        this.storedTotal = storedTotal;
+    }
+
+    public double getStoredTotal() {
         return storedTotal;
     }
 
