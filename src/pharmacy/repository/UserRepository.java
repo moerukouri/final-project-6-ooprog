@@ -13,7 +13,7 @@ import model.Staff;
 import model.User;
 
 public class UserRepository {
-    private static final int FIELD_COUNT = 6;
+    private static final int FIELD_COUNT = 7;
     private static final String USERS_PATH = FilePath.USERS_PATH.getFilePath();
 
     public UserRepository() {
@@ -87,13 +87,14 @@ public class UserRepository {
         Role role = Role.valueOf(f[3].trim().toUpperCase());
         AccountStatus status = AccountStatus.valueOf(f[4].trim().toUpperCase());
         String passwordHash = f[5];
-        if (userId.isBlank() || username.isBlank() || fullName.isBlank() || passwordHash.isBlank()) {
+        String salt = f[6];
+        if (userId.isBlank() || username.isBlank() || fullName.isBlank() || passwordHash.isBlank() || salt.isBlank()) {
             throw new IllegalArgumentException("Empty required fields in user record."); // ADD EXCEPTION
         }
-        return role == Role.ADMIN ? new Admin(userId, username, fullName, passwordHash, status) : new Staff(userId, username, fullName, passwordHash, status);
+        return role == Role.ADMIN ? new Admin(userId, username, fullName, passwordHash, salt, status) : new Staff(userId, username, fullName, passwordHash, salt, status);
     }
 
     private static String serialize(User user) {
-        return String.join("|", user.getUserId(), user.getUsername(), user.getFullName(), user.getRole().getLabel(), user.getStatus().getLabel(), user.passwordHash());
+        return String.join("|", user.getUserId(), user.getUsername(), user.getFullName(), user.getRole().getLabel(), user.getStatus().getLabel(), user.passwordHash(), user.getSalt());
     }
 }
