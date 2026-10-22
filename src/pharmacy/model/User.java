@@ -1,17 +1,21 @@
 package model;
 
+import strategy.AccessStrategy;
+
 public abstract class User {
     private final String userId;
     private String username;
     private String fullName;
     private String passwordHash;
+    private String salt;
     private AccountStatus status;
 
-    protected User(String userId, String username, String fullName, String passwordHash, AccountStatus status) {
+    protected User(String userId, String username, String fullName, String passwordHash, String salt, AccountStatus status) {
         this.userId = userId;
         setUsername(username);
         setFullName(fullName);
         setPasswordHash(passwordHash);
+        setSalt(salt);
         setStatus(status);
     }
 
@@ -31,6 +35,10 @@ public abstract class User {
         return passwordHash;
     }
 
+    public String getSalt() {
+        return salt;
+    }
+
     public AccountStatus getStatus() {
         return status;
     }
@@ -47,6 +55,10 @@ public abstract class User {
         this.passwordHash = passwordHash;
     }
 
+    public final void setSalt(String salt) {
+        this.salt = salt;
+    }
+
     public final void setStatus(AccountStatus status) {
         this.status = status == null ? AccountStatus.ACTIVE : status;
     }
@@ -55,7 +67,13 @@ public abstract class User {
         return status == AccountStatus.ACTIVE;
     }
 
+    public boolean checkPassword(String candidate) {
+        return candidate != null && PasswordHasher.verify(candidate, salt, passwordHash);
+    }
+
     public abstract Role getRole();
+
+    public abstract AccessStrategy accessStrategy();
 
     @Override 
     public String toString() {
