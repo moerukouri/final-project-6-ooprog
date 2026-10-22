@@ -6,6 +6,6 @@ public class AccessDeniedException extends RuntimeException {
     }
 
     public AccessDeniedException(String username, String operation) {
-        super(String.format("Error: %s cannot access %s", username, operation));
+        super(String.format("Error: %s is not allowed to perform %s.", username, operation));
     }
 }
