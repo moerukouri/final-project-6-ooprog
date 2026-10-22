@@ -57,7 +57,7 @@ public class UserRepository {
         return String.format("U%04d", max + 1);
     }
 
-    public void add (User user) {
+    public void add(User user) {
         FileHandler.write(serialize(user), USERS_PATH, true);
     }
 
