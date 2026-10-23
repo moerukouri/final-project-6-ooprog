@@ -1,11 +1,11 @@
 package repository;
 
+import exception.FileStorageException;
+import exception.PharmacyException;
 import io.FileCreator;
-import io.FilePath;
-import model.Sale;
-import model.SaleItem;
-import ui.Display;
 import io.FileHandler;
+import io.FilePath;
+import io.Operation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,8 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import exception.FileStorageException;
-import exception.PharmacyException;
+import java.util.stream.Collectors;
+import model.Sale;
+import model.SaleItem;
+import ui.Display;
 
 public class SaleRepository {
     private static final String SALES_PATH = FilePath.SALES_PATH.getFilePath();
@@ -23,6 +25,9 @@ public class SaleRepository {
     private static final String SALE_TYPE = "SALE";
     private static final String ITEM_TYPE = "ITEM";
     private static final int SALE_FIELDS = 5;
+    private static final int SALE_FIELDS_WITH_STATUS = 6;
+    private static final String ACTIVE_STATUS = "ACTIVE";
+    private static final String VOIDED_STATUS = "VOIDED";
     private static final int ITEM_FIELDS = 7;
     private static final double TOTAL_TOLERANCE = 0.005;
 
@@ -30,7 +35,15 @@ public class SaleRepository {
         FileCreator.getInstance().createSalesFile();
     }
 
+    /** Completed sales only. Voided sales are excluded so lists and reports stay accurate. */
     public List<Sale> findAll() {
+        return loadAll().stream()
+                .filter(sale -> !sale.isVoided())
+                .collect(Collectors.toList());
+    }
+
+    /** Every sale in the file, including voided ones. */
+    private List<Sale> loadAll() {
         List<Sale> sales = new ArrayList<>();
         Sale current = null;
 
@@ -76,7 +89,7 @@ public class SaleRepository {
     }
 
     public Optional<Sale> findById(String saleId) {
-        for (Sale sale : findAll()) {
+        for (Sale sale : loadAll()) {
             if (sale.getSaleId().equals(saleId)) {
                 return Optional.of(sale);
             }
@@ -106,7 +119,7 @@ public class SaleRepository {
     public String nextSaleId() {
         int max = 0;
         
-        for (Sale sale : findAll()) {
+        for (Sale sale : loadAll()) {
             max = Math.max(max, numericSuffix(sale.getSaleId()));
         }
         
@@ -121,6 +134,22 @@ public class SaleRepository {
         }
     }
 
+    public void markVoided(String saleId) {
+        String prefix = SALE_TYPE + "|" + saleId + "|";
+
+        String oldLine = FileHandler.retrieve(SALES_PATH).stream()
+                .filter(line -> line.startsWith(prefix))
+                .findFirst()
+                .orElseThrow(() -> new PharmacyException("Sale " + saleId + " was not found in storage."));
+
+        String[] f = oldLine.split("\\|", -1);
+        String newLine = String.join("|", f[0], f[1], f[2], f[3], f[4], VOIDED_STATUS);
+
+        if (!FileHandler.update(oldLine, newLine, SALES_PATH)) {
+            throw new FileStorageException(Operation.WRITE.getOperation(), SALES_PATH);
+        }
+    }
+
     private static int numericSuffix(String id) {
         try {
             return Integer.parseInt(id.substring(1));
@@ -130,11 +159,14 @@ public class SaleRepository {
     }
 
     private static Sale parseSale(String[] f) {
-        if (f.length != SALE_FIELDS) {
+        // Older files have 5 fields (no status column); newer ones have 6.
+        if (f.length != SALE_FIELDS && f.length != SALE_FIELDS_WITH_STATUS) {
             throw new FileStorageException(f);
         }
-        
-        return Sale.fromFile(f[1], LocalDateTime.parse(f[2], TS), f[3], Double.parseDouble(f[4]));
+
+        boolean voided = f.length == SALE_FIELDS_WITH_STATUS && VOIDED_STATUS.equalsIgnoreCase(f[5].trim());
+
+        return Sale.fromFile(f[1], LocalDateTime.parse(f[2], TS), f[3], Double.parseDouble(f[4]), voided);
     }
 
     private static SaleItem parseItem(String[] f, Sale current) {
@@ -150,7 +182,7 @@ public class SaleRepository {
     }
 
     private static String serialize(Sale sale) {
-        return String.join("|", SALE_TYPE, sale.getSaleId(), sale.getTimestamp().format(TS), sale.getCashierId(), money(sale.getTotalAmount()));
+        return String.join("|", SALE_TYPE, sale.getSaleId(), sale.getTimestamp().format(TS), sale.getCashierId(), money(sale.getTotalAmount()), sale.isVoided() ? VOIDED_STATUS : ACTIVE_STATUS);
     }
 
     private static String serialize(String saleId, SaleItem item) {

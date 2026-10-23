@@ -1,15 +1,14 @@
 package util;
 
+import exception.InvalidInputException;
 import java.time.LocalDate;
 import java.util.Scanner;
-
-import exception.InvalidInputException;
 import ui.Display;
 
 public class Input {
     private Input() {} // Prevents Instantiation
     
-    private static Input INSTANCE = new Input();
+    private static final Input INSTANCE = new Input();
     private final Scanner sc = new Scanner(System.in);
 
     public static Input getInstance() {
@@ -151,18 +150,16 @@ public class Input {
         return medicineName;
     }
 
-    public LocalDate readBatchNumber() {
+    public String readBatchNumber() {
         boolean isValid = false;
-        LocalDate batchNumber = null;
+        String batchNumber = null;
 
         do {
             try {
                 Display.print("Input Batch Number: ");
-                String rawInput = sc.nextLine().trim();
-            
-                Validate.date(rawInput);
-                batchNumber = LocalDate.parse(rawInput);
-                
+                batchNumber = sc.nextLine().trim();
+
+                Validate.isValidString(batchNumber, "Batch Number cannot be empty or null.");
                 isValid = true;
             } catch (InvalidInputException e) {
                 Display.feedback(e.getMessage());

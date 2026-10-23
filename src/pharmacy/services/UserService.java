@@ -3,9 +3,7 @@ package services;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
 import model.AccountStatus;
-
 import model.Admin;
 import model.Role;
 import model.Staff;
@@ -222,16 +220,18 @@ public class UserService {
     }
 
     private String readPassword() {
-        while (true) {
-            String password = input.readPassword("Input Password");
+        String password = promptPassword();
 
-            if (password.length() < 4) {
-                Display.feedback("Password must be at least 4 characters long.");
-                continue;
-            }
-
-            return password;
+        while (password.length() < 4) {
+            Display.feedback("Password must be at least 4 characters long.");
+            password = promptPassword();
         }
+
+        return password;
+    }
+
+    private String promptPassword() {
+        return input.readPassword("Input Password");
     }
 
     private void showDetails(User user) {

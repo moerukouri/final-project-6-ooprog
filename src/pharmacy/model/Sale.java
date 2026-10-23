@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import util.Validate;
 
 public class Sale {
@@ -14,6 +13,7 @@ public class Sale {
     private final List<SaleItem> items = new ArrayList<>();
     private double totalAmount;
     private double storedTotal;
+    private boolean voided;
 
     private Sale(String saleId, LocalDateTime timestamp, String cashierId) {
         this.saleId = Validate.requireText(saleId, "Sale ID");
@@ -33,9 +33,22 @@ public class Sale {
     }
 
     public static Sale fromFile(String saleId, LocalDateTime timestamp, String cashierId, double storedTotal) {
+        return fromFile(saleId, timestamp, cashierId, storedTotal, false);
+    }
+
+    public static Sale fromFile(String saleId, LocalDateTime timestamp, String cashierId, double storedTotal, boolean voided) {
         Sale sale = new Sale(saleId, timestamp, cashierId);
         sale.setStoredTotal(storedTotal);
+        sale.voided = voided;
         return sale;
+    }
+
+    public boolean isVoided() {
+        return voided;
+    }
+
+    public void markVoided() {
+        this.voided = true;
     }
 
     public final void addItem(SaleItem item) {

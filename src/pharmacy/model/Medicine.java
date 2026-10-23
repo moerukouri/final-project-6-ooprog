@@ -45,7 +45,7 @@ public class Medicine {
     }
 
     public final void setQuantity(int quantity) {
-        this.quantity = Validate.requirePositiveInt(quantity, "Quantity");
+        this.quantity = Validate.requireNonNegativeInt(quantity, "Quantity");
     }
 
     public final void setMinStockLevel(int minStockLevel) {
@@ -68,6 +68,10 @@ public class Medicine {
 
     public void deactivate() {
         this.active = false;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public boolean isActive() {
