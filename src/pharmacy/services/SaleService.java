@@ -115,8 +115,9 @@ public class SaleService {
         Validate.authorization(user, Action.RECORD_TRANSACTION);
 
         ArrayList<SaleItem> items = new ArrayList<>();
+        boolean running = true;
 
-        while (true) {
+        while (running) {
             int exitChoice = collectItems(items);
 
             if (exitChoice == 2) {
@@ -133,7 +134,7 @@ public class SaleService {
             printCart(items);
 
             if (input.readYesNo("Complete this sale? (y/n): ")) {
-                break;
+                running = false;
             }
 
             Display.feedback("Sale not completed. Your items were kept, you can keep editing the transaction.");

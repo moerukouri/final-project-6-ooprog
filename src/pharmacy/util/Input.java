@@ -56,20 +56,25 @@ public class Input {
     }
 
     public boolean readYesNo(String prompt) {
-        while (true) {
+        boolean isValid = false;
+        boolean output = false;
+        
+        while (!isValid) {
             Display.print(prompt);
             String answer = sc.nextLine().trim();
 
             if (answer.equalsIgnoreCase("y")) {
-                return true;
+                output = true;
             }
 
             if (answer.equalsIgnoreCase("n")) {
-                return false;
+                output = false;
             }
 
             Display.feedback("Please enter only y or n.");
         }
+
+        return output;
     }
 
     public String readUserId() {
