@@ -3,6 +3,8 @@ package repository;
 import io.FileCreator;
 import io.FileHandler;
 import io.FilePath;
+import io.Operation;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,8 +12,9 @@ import java.util.Locale;
 import java.util.Optional;
 
 import exception.FileStorageException;
-import exception.IllegalMedicineException;
+import exception.PharmacyException;
 import model.Medicine;
+import util.Validate;
 
 public class MedicineRepository {
     private static final int FIELD_COUNT = 9;
@@ -65,17 +68,19 @@ public class MedicineRepository {
 
     public void update(Medicine medicine) {
         String oldLine = FileHandler.retrieveLine(medicine.getMedicineId(), 0, MEDICINE_PATH);
+        Validate.isObjectNull(oldLine, "Old Line");
         
-        if (oldLine == null || !FileHandler.update(oldLine, serialize(medicine), MEDICINE_PATH)) {
-            throw new IllegalMedicineException(medicine.getMedicineId());
+        if (!FileHandler.update(oldLine, serialize(medicine), MEDICINE_PATH)) {
+            throw new FileStorageException(Operation.WRITE.getOperation(), MEDICINE_PATH);
         }
     }
 
     public void removeById(String medicineId) {
         String line = FileHandler.retrieveLine(medicineId, 0, MEDICINE_PATH);
+        Validate.isObjectNull(line, "Line");
         
-        if (line == null || !FileHandler.delete(line, MEDICINE_PATH)) {
-            throw new IllegalMedicineException(medicineId);
+        if (!FileHandler.delete(line, MEDICINE_PATH)) {
+            throw new FileStorageException(Operation.WRITE.getOperation(), MEDICINE_PATH);
         }
     }
  
@@ -83,7 +88,7 @@ public class MedicineRepository {
         try {
             return Integer.parseInt(id.substring(1));
         } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
-            throw new IllegalMedicineException();
+            throw new PharmacyException("Medicine ID is Invalid.");
         }
     }
  

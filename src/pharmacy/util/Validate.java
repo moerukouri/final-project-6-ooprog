@@ -1,9 +1,13 @@
 package util;
 
 import exception.AccessDeniedException;
-import java.io.File;
+import exception.InvalidInputException;
+import exception.PharmacyException;
+import java.util.List;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import model.Admin;
 import model.Medicine;
 import model.PurchaseRequest;
@@ -12,342 +16,249 @@ import model.Sale;
 import model.SaleItem;
 import model.Staff;
 import model.User;
-import strategy.AccessStrategy;
 import strategy.Action;
 
 public class Validate {
-
     private Validate() {} // Prevents Instantiation
 
-    public static void authorization(User user, Action action) {
-        if (action == null) {
-            throw new IllegalArgumentException("Action cannot be null.");
-        }
+    private static final String INTEGER_REGEX = "^[1-9][0-9]*$";
+    private static final String DOUBLE_REGEX = "(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,2})?";
+    private static final String PASSWORD_REGEX = "^[a-zA-Z0-9]{8,}$";
+    
+    private static final String DATE_FORMAT = "uuuu-MM-dd";
+    private static final String USER_ID_FORMAT = "^U[0-9]{4}$";
+    private static final String MEDICINE_ID_FORMAT = "^M[0-9]{4}$";
+    private static final String SALE_ID_FORMAT = "^S[0-9]{4}$";
 
-        if (user == null || !user.accessStrategy().isAllowed(action)) {
-            String roleName = (user == null || user.getRole() == null)
-                    ? "Anonymous"
-                    : user.getRole().getLabel();
-            throw new AccessDeniedException(roleName, action.getLabel());
+
+    public static void authorization(User user, Action action) {
+        isObjectNull(action, "Action");
+        isObjectNull(user, "User");
+
+        if (!user.accessStrategy().isAllowed(action)) {
+            throw new AccessDeniedException(user.getRole().getLabel(), action.getLabel());
         }
     }
-        //MEDICINE VALIDATION
-    public static void validate(Medicine medicine) {
-        if (medicine == null) {
-            throw new IllegalArgumentException("Medicine cannot be null.");
+
+    public static void choice(String rawInput, int min, int max) {
+        int choice = isValidInteger(rawInput, "Choice");
+
+        if (!(choice >= min) && !(choice <= max)) {
+            throw new InvalidInputException("The number is not within the range of choices.");
         }
+    }
+
+    public static void userId(String id) {
+        isValidString(id, "User ID is empty.");
+
+        if (!id.matches(USER_ID_FORMAT)) {
+            throw new InvalidInputException("User ID has invalid format.");
+        }
+    }
+
+    public static void medicineId(String id) {
+        isValidString(id, "Medicine ID is empty.");
+
+        if (!id.matches(MEDICINE_ID_FORMAT)) {
+            throw new InvalidInputException("Medicine ID has invalid format.");
+        }
+    }
+
+    public static void saleId(String id) {
+        isValidString(id, "Sale ID is empty.");
+
+        if (!id.matches(SALE_ID_FORMAT)) {
+            throw new InvalidInputException("Sale ID has invalid format.");
+        }
+    }
+
+    public static void password(String password) {
+        isValidString(password, "Password is empty.");
+
+        if (password.length() < 8) {
+            throw new InvalidInputException("Password should be 8+ characters.");
+        }
+
+        if (!password.matches(PASSWORD_REGEX)) {
+            throw new InvalidInputException("Password should be alphanumeric.");
+        }
+    }
+
+    public static void date(String date) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT).withResolverStyle(ResolverStyle.STRICT);
+        
+        try {
+            LocalDate.parse(date, formatter);
+        } catch (DateTimeParseException e) {
+            throw new InvalidInputException("Date is not formatted like YYYY-MM-DD.");
+        }
+    }
+
+    public static int isValidInteger(String integer, String numberName) {
+        isValidString(integer, numberName + "is empty.");
+
+        if (!integer.matches(INTEGER_REGEX)) {
+            throw new InvalidInputException(numberName + "is not properly formatted or a negative integer.");
+        }
+
+        try {
+            return Integer.parseInt(integer);
+        } catch (NumberFormatException e) {
+            throw new InvalidInputException(numberName + " is not an integer.");
+        }
+    }
+
+    public static double isValidDouble(String decimal, String numberName) {
+        isValidString(decimal, "Decimal Number cannot be empty.");
+        isValidString(numberName, "Number Name cannot be empty.");
+
+        if (!decimal.matches(DOUBLE_REGEX)) {
+            throw new InvalidInputException(numberName + " is not properly formatted or a negative decimal number.");
+        }
+
+
+        try {
+            double number = Double.parseDouble(decimal);
+
+            if (!Double.isFinite(number)) {
+                throw new InvalidInputException(numberName + " is not finite.");
+            }
+
+            return number;
+        } catch (NumberFormatException e) {
+            throw new InvalidInputException(numberName + " is not a decimal number.");
+        }
+    } 
+
+    public static void isValidString(String string, String errorMessage) {
+        string = string.trim().strip();
+
+        if (string.isBlank() || string.isEmpty() || string.equals(null)) {
+            throw new InvalidInputException(errorMessage);
+        }
+    }
+
+    public static void isObjectNull(Object object, String objectName) {
+        if (object == null) {
+            throw new PharmacyException(objectName + " cannot be null.");
+        }
+    }
+    
+    public static void medicineObject(Medicine medicine) {
+        isObjectNull(medicine, "Medicine");
 
         requireText(medicine.getMedicineId(), "Medicine ID");
         requireText(medicine.getBatchNumber(), "Batch number");
         requireText(medicine.getName(), "Medicine name");
         requireText(medicine.getCategory(), "Medicine category");
 
-        if (!Double.isFinite(medicine.getUnitPrice())
-                || medicine.getUnitPrice() < 0) {
-            throw new IllegalArgumentException(
-                "Unit price must be a finite, non-negative number."
-            );
-        }
+        isValidDouble(String.valueOf(medicine.getUnitPrice()), "Unit Price");
+        isValidInteger(String.valueOf(medicine.getQuantity()), "Quantity");
+        isValidInteger(String.valueOf(medicine.getMinStockLevel()), "Minimum Stock Level");
 
-        if (medicine.getQuantity() < 0) {
-            throw new IllegalArgumentException(
-                "Quantity cannot be negative."
-            );
-        }
-
-        if (medicine.getMinStockLevel() < 0) {
-            throw new IllegalArgumentException(
-                "Minimum stock level cannot be negative."
-            );
-        }
-
-        LocalDate expiry = medicine.getExpirationDate();
-
-        if (expiry == null) {
-            throw new IllegalArgumentException(
-                "Expiration date is required."
-            );
-        }
+        isObjectNull(medicine.getExpirationDate(), "Expiration Date");
     }
-    public static String requireText(String value, String field) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(
-                field + " cannot be empty."
-            );
-        }
 
+    public static String requireText(String value, String field) {
+        isValidString(value, field + "cannot be empty.");
         return value;
     }
 
-        //PURCHASE REQUEST VALIDATION
-    public static void validate(PurchaseRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException(
-                "Purchase request cannot be null."
-            );
-        }
-
-        if (request.getMedicineId() == null
-                || request.getMedicineId().isBlank()) {
-            throw new IllegalArgumentException(
-                "Medicine ID is required."
-            );
-        }
-
-        if (request.getQuantity() <= 0) {
-            throw new IllegalArgumentException(
-                "Requested quantity must be greater than zero."
-            );
-        }
-    }
-        //SALE ITEM VALIDATION
-    public static void validate(SaleItem item) {
-        if (item == null) {
-            throw new IllegalArgumentException(
-                "Sale item cannot be null."
-            );
-        }
-
-        if (item.getMedicineId() == null
-                || item.getMedicineId().isBlank()) {
-            throw new IllegalArgumentException(
-                "Medicine ID is required."
-            );
-        }
-
-        if (item.getMedicineName() == null
-                || item.getMedicineName().isBlank()) {
-            throw new IllegalArgumentException(
-                "Medicine name is required."
-            );
-        }
-
-        if (!Double.isFinite(item.getUnitPrice())
-                || item.getUnitPrice() < 0) {
-            throw new IllegalArgumentException(
-                "Unit price must be a finite, non-negative number."
-            );
-        }
-
-        if (item.getQuantity() <= 0) {
-            throw new IllegalArgumentException(
-                "Sale quantity must be greater than zero."
-            );
-        }
-
-        if (!Double.isFinite(item.getSubtotal())) {
-            throw new IllegalArgumentException(
-                "Sale subtotal must be finite."
-            );
-        }
-
+    public static void purchaseRequest(PurchaseRequest request) {
+        isObjectNull(request, "Purchase Request");
+        medicineId(request.getMedicineId());
+        isValidInteger(String.valueOf(request.getQuantity()), "Quantity");
     }
 
-    // SALE VALIDATION
-    public static void validate(Sale sale) {
-        if (sale == null) {
-            throw new IllegalArgumentException(
-                "Sale cannot be null."
-            );
-        }
+    public static void saleItem(SaleItem item) {
+        isObjectNull(item, "Sale Item");
+        medicineId(item.getMedicineId());
+        isValidString(item.getMedicineName(), "Medicine Name is empty.");
+
+        isValidDouble(String.valueOf(item.getUnitPrice()), "Unit Price");
+        isValidInteger(String.valueOf(item.getQuantity()), "Sale Quantity");
+        isValidDouble(String.valueOf(item.getSubtotal()), "Sale Subtotal");
+    }
+
+    public static void saleObject(Sale sale) {
+        isObjectNull(sale, "Sale");
 
         requireText(sale.getSaleId(), "Sale ID");
         requireText(sale.getCashierId(), "Cashier ID");
 
-        if (sale.getTimestamp() == null) {
-            throw new IllegalArgumentException(
-                "Sale timestamp is required."
-            );
-        }
-
-        if (sale.getItems() == null) {
-            throw new IllegalArgumentException(
-                "Sale items cannot be null."
-            );
-        }
+        isObjectNull(sale.getTimestamp(), "Sale timestamp is empty.");
+        isObjectNull(sale.getItems(), "Sale items cannot be null");
 
         for (SaleItem item : sale.getItems()) {
-            validate(item);
+            saleItem(item);
         }
 
-        if (!Double.isFinite(sale.getTotalAmount())
-                || sale.getTotalAmount() < 0) {
-            throw new IllegalArgumentException(
-                "Sale total must be finite and non-negative."
-            );
-        }
-
-        if (!Double.isFinite(sale.getStoredTotal())
-                || sale.getStoredTotal() < 0) {
-            throw new IllegalArgumentException(
-                "Stored sale total must be finite and non-negative."
-            );
-        }
+        isValidDouble(String.valueOf(sale.getTotalAmount()), "Sale Total");
+        isValidDouble(String.valueOf(sale.getStoredTotal()), "Stored Sale Total");
     }
-    //USER VALIDATION
-    public static void validate(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException(
-                "User cannot be null."
-            );
-        }
+
+    public static void userObject(User user) {
+        isObjectNull(user, "User");
 
         requireText(user.getUserId(), "User ID");
         requireText(user.getUsername(), "Username");
         requireText(user.getFullName(), "Full name");
         requireText(user.getPassword(), "Password");
 
-        if (user.getStatus() == null) {
-            throw new IllegalArgumentException(
-                "Account status cannot be null."
-            );
-        }
-
-        if (user.getRole() == null) {
-            throw new IllegalArgumentException(
-                "User role cannot be null."
-            );
-        }
+        isObjectNull(user.getStatus(), "Account Status");
+        isObjectNull(user.getRole(), "User Role");
     }
 
-    // ADMIN VALIDATION
-    public static void validate(Admin admin) {
-        if (admin == null) {
-            throw new IllegalArgumentException(
-                "Admin cannot be null."
-            );
-        }
-
-        validate((User) admin);
+    public static void adminObject(Admin admin) {
+        isObjectNull(admin, "Admin");
+        userObject((User) admin);
 
         if (admin.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException(
-                "User must have the administrator role."
-            );
+            throw new PharmacyException("Admin role does not match with the object.");
         }
     }
-    //STAFF VALIDATION
-    public static void validate(Staff staff) {
-        if (staff == null) {
-            throw new IllegalArgumentException(
-                "Staff cannot be null."
-            );
-        }
 
-        validate((User) staff);
+    public static void staffObject(Staff staff) {
+        isObjectNull(staff, "Staff");
+        userObject((User) staff);
 
         if (staff.getRole() != Role.STAFF) {
-            throw new IllegalArgumentException(
-                "User must have the staff role."
-            );
+            throw new PharmacyException("Staff role does not match with the object.");
         }
     }
 
-    public static void validateUsers(ArrayList<User> users) {
-        if (users == null) {
-            throw new IllegalArgumentException(
-                "User list cannot be null."
-            );
-        }
+    public static void usersList(List<User> users) {
+        isObjectNull(users, "Users List");
 
         for (User user : users) {
-            if (user == null) {
-                throw new IllegalArgumentException(
-                    "User list cannot contain null entries."
-                );
-            }
-
-            if (user.getUserId() == null
-                    || user.getUsername() == null
-                    || user.getFullName() == null
-                    || user.getRole() == null
-                    || user.getStatus() == null) {
-                throw new IllegalArgumentException(
-                    "User contains missing display data."
-                );
-            }
+            userObject(user);
         }
     }
 
-    public static void validateMedicines(
-            ArrayList<Medicine> medicines) {
-        if (medicines == null) {
-            throw new IllegalArgumentException(
-                "Medicine list cannot be null."
-            );
-        }
+    public static void medicinesList(List<Medicine> medicines) {
+        isObjectNull(medicines, "Medicines List");
 
         for (Medicine medicine : medicines) {
-            if (medicine == null) {
-                throw new IllegalArgumentException(
-                    "Medicine list cannot contain null entries."
-                );
-            }
-
-            if (medicine.getMedicineId() == null
-                    || medicine.getBatchNumber() == null
-                    || medicine.getName() == null
-                    || medicine.getCategory() == null
-                    || medicine.getExpirationDate() == null) {
-                throw new IllegalArgumentException(
-                    "Medicine contains missing display data."
-                );
-            }
+            medicineObject(medicine);
         }
     }
-    //TABLE VALIDATION
-    public static void validateSales(ArrayList<Sale> sales) {
-        if (sales == null) {
-            throw new IllegalArgumentException(
-                "Sales list cannot be null."
-            );
-        }
+
+    public static void salesList(List<Sale> sales) {
+        isObjectNull(sales, "Sales List");
 
         for (Sale sale : sales) {
-            if (sale == null) {
-                throw new IllegalArgumentException(
-                    "Sales list cannot contain null entries."
-                );
-            }
-
-            if (sale.getSaleId() == null
-                    || sale.getTimestamp() == null
-                    || sale.getCashierId() == null) {
-                throw new IllegalArgumentException(
-                    "Sale contains missing display data."
-                );
-            }
-        }
-    }
-        //DISPLAY VALIDATION
-    public static void validateText(String text) {
-        if (text == null) {
-            throw new IllegalArgumentException(
-                "Display text cannot be null."
-            );
+            saleObject(sale);
         }
     }
 
     public static void validateTitle(String title) {
-        validateText(title);
-
-        if (title.isBlank()) {
-            throw new IllegalArgumentException(
-                "Title cannot be empty."
-            );
-        }
+        isValidString(title, "Title is empty.");
     }
 
     public static void validateFeedback(String feedback) {
-        validateText(feedback);
-
-        if (feedback.isBlank()) {
-            throw new IllegalArgumentException(
-                "Feedback cannot be empty."
-            );
-        }
+        isValidString(feedback, "Feedback is empty.");
     }
-                        //INPUT VALIDATION
+    
     public static int requirePositiveInt(int value, String fieldName) {
         if (value <= 0) {
             throw new IllegalArgumentException(
@@ -389,36 +300,6 @@ public class Validate {
         return value;
     }
 
-    public static String requireValidChoice(
-            String choice, String[] allowedChoices) {
-        requireText(choice, "Choice");
-
-        if (allowedChoices == null || allowedChoices.length == 0) {
-            throw new IllegalArgumentException(
-                "Allowed choices must be provided."
-            );
-        }
-
-        for (String allowed : allowedChoices) {
-            if (allowed != null && allowed.equalsIgnoreCase(choice)) {
-                return choice;
-            }
-        }
-
-        throw new IllegalArgumentException(
-            "Invalid choice: " + choice
-        );
-    }
-    //PASSWORD VALIDATION
-    public static void validatePassword(String password) {
-        if (password == null || password.isEmpty()) {
-            throw new IllegalArgumentException(
-                "Password cannot be null or empty."
-            );
-        }
-    }
-
-    //REPOSITORY VALIDATION
     public static void validateUserId(String userId) {
         requireText(userId, "User ID");
 
@@ -434,11 +315,7 @@ public class Validate {
     }
 
     public static void validateUser(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException(
-                "User cannot be null."
-            );
-        }
+        isObjectNull(user, "User");
 
         validateField(user.getUserId(), "User ID");
         validateField(user.getUsername(), "Username");
@@ -486,8 +363,7 @@ public class Validate {
         validateUser(replacement);
     }
 
-    private static void validateField(
-            String value, String fieldName) {
+    private static void validateField(String value, String fieldName) {
         requireText(value, fieldName);
 
         if (value.contains("|")) {
@@ -496,155 +372,4 @@ public class Validate {
             );
         }
     }
-
-    //FILEIO VALIDATION
-    public static void validateFilePath(String filePath) {
-        if (filePath == null || filePath.isBlank()) {
-            throw new IllegalArgumentException(
-                "File path cannot be empty."
-            );
-        }
-    }
-
-    public static void validateId(String id) {
-        if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException(
-                "ID cannot be empty."
-            );
-
-        }
-
-        if (id.contains("|")) {
-            throw new IllegalArgumentException(
-                "ID cannot contain '|'."
-            );
-        }
-    }
-
-    public static void validateLine(String line) {
-        if (line == null || line.isBlank()) {
-            throw new IllegalArgumentException(
-                "Line cannot be empty."
-            );
-        }
-    }
-
-    public static void validateFieldIndex(int index) {
-        if (index < 0) {
-            throw new IllegalArgumentException(
-                "Field index cannot be negative."
-            );
-        }
-    }
-
-    public static void validateWrite(
-            String input, String filePath) {
-        validateFilePath(filePath);
-        validateLine(input);
-
-        if (input.contains("\n") || input.contains("\r")) {
-            throw new IllegalArgumentException(
-                "Input must contain only one line."
-            );
-        }
-    }
-
-    public static void validateLines(
-            ArrayList<String> lines, String filePath) {
-        validateFilePath(filePath);
-
-        if (lines == null) {
-            throw new IllegalArgumentException(
-                "Lines list cannot be null."
-            );
-        }
-
-        for (String line : lines) {
-            if (line == null) {
-                throw new IllegalArgumentException(
-                    "Lines list cannot contain null entries."
-                );
-            }
-
-            if (line.contains("\n") || line.contains("\r")) {
-                throw new IllegalArgumentException(
-                    "Each entry must contain only one line."
-                );
-            }
-        }
-    }
-
-    public static void validateUpdate(
-            String oldLine, String newLine, String filePath) {
-        validateFilePath(filePath);
-        validateLine(oldLine);
-        validateWrite(newLine, filePath);
-    }
-
-    public static void validateRetrieveLine(
-            String value, int index, String filePath) {
-        validateFilePath(filePath);
-        validateId(value);
-        validateFieldIndex(index);
-    }
-
-    public static void validateDelete(
-            String line, String filePath) {
-        validateFilePath(filePath);
-        validateLine(line);
-    }
-//FILECREATOR VALIDATION
-    public static void validateFile(File file) {
-        if (file == null) {
-            throw new IllegalArgumentException(
-                "File cannot be null."
-            );
-        }
-
-        if (file.getPath().isBlank()) {
-            throw new IllegalArgumentException(
-                "File path cannot be empty."
-            );
-        }
-
-        File parent = file.getAbsoluteFile().getParentFile();
-
-        if (parent == null) {
-            throw new IllegalArgumentException(
-                "File must have a valid parent directory."
-            );
-        }
-
-        if (file.isDirectory()) {
-            throw new IllegalArgumentException(
-                "Expected a file, but received a directory."
-            );
-        }
-    }
-    //STRATEGRY VALIDATION
-    public static void validateAction(Action action) {
-        if (action == null) {
-            throw new IllegalArgumentException(
-                "Action cannot be null."
-            );
-        }
-    }
-
-    public static void validateAccessStrategy(
-            AccessStrategy accessStrategy) {
-        if (accessStrategy == null) {
-            throw new IllegalArgumentException(
-                "Access strategy cannot be null."
-            );
-        }
-    }
-
-    public static boolean validatePermission(
-            AccessStrategy accessStrategy, Action action) {
-        validateAccessStrategy(accessStrategy);
-        validateAction(action);
-
-        return accessStrategy.isAllowed(action);
-    }
 }
-

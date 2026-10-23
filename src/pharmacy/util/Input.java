@@ -2,28 +2,55 @@ package util;
 
 import java.time.LocalDate;
 import java.util.Scanner;
+
+import exception.InvalidInputException;
 import ui.Display;
 
 public class Input {
     private Input() {} // Prevents Instantiation
     
-    private Input INSTANCE = new Input();
+    private static Input INSTANCE = new Input();
     private final Scanner sc = new Scanner(System.in);
 
-    public Input getInstance() {
-        return this.INSTANCE;
+    public static Input getInstance() {
+        return INSTANCE;
     }
 
-    public String readId() {
+    public int readChoice(int min, int max) {
+        boolean isValid = false;
+        int choice = -1;
+
+        do {
+            try {
+                Display.print("Input Choice: ");
+                String rawInput = sc.nextLine().trim();
+
+                Validate.choice(rawInput, min, max);
+                choice = Integer.parseInt(rawInput);
+
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
+        } while (!isValid);
+
+        return choice;
+    }
+
+    public String readUserId() {
         boolean isValid = false;
         String id = null;
 
         do {
-            Display.print("Input ID: ");
-            id = sc.nextLine().trim();
+            try {
+                Display.print("Input ID: ");
+                id = sc.nextLine().trim();
 
-            // Validator here
-            isValid = true;
+                Validate.userId(id);
+                isValid = true;
+            } catch (InvalidInputException e) {
+               Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return id;
@@ -34,11 +61,15 @@ public class Input {
         String username = null;
 
         do {
-            Display.print("Input Username: ");
-            username = sc.nextLine().trim();
+            try {
+                Display.print("Input Username: ");
+                username = sc.nextLine().trim();
 
-            // Validator here
-            isValid = true;
+                Validate.isValidString(username, "Username cannot be empty or null.");
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return username;
@@ -49,11 +80,15 @@ public class Input {
         String password = null;
 
         do {
-            Display.print("Input Password: ");
-            password = sc.nextLine().trim();
+            try {
+                 Display.print("Input Password: ");
+                password = sc.nextLine().trim();
 
-            // Validator here
-            isValid = true;
+                Validate.password(password);
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return password;
@@ -64,11 +99,15 @@ public class Input {
         String fullName = null;
 
         do {
-            Display.print("Input Full Name: ");
-            fullName = sc.nextLine().trim();
+            try {
+                 Display.print("Input Full Name: ");
+                fullName = sc.nextLine().trim();
 
-            // Validator here
-            isValid = true;
+                Validate.isValidString(fullName, "Full Name cannot be empty or null.");
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return fullName;
@@ -79,11 +118,15 @@ public class Input {
         String medicineName = null;
 
         do {
-            Display.print("Input Medicine Name: ");
-            medicineName = sc.nextLine().trim();
+            try {
+                Display.print("Input Medicine Name: ");
+                medicineName = sc.nextLine().trim();
 
-            // Validator here
-            isValid = true;
+                Validate.isValidString(medicineName, "Medicine Name cannot be empty or null.");
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return medicineName;
@@ -94,12 +137,17 @@ public class Input {
         LocalDate batchNumber = null;
 
         do {
-            Display.print("Input Batch Number: ");
-            String rawInput = sc.nextLine().trim();
-
-            // Validator here
-            batchNumber = LocalDate.parse(rawInput);
-            isValid = true;
+            try {
+                Display.print("Input Batch Number: ");
+                String rawInput = sc.nextLine().trim();
+            
+                Validate.date(rawInput);
+                batchNumber = LocalDate.parse(rawInput);
+                
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return batchNumber;
@@ -110,11 +158,15 @@ public class Input {
         String category = null;
 
         do {
-            Display.print("Input Category: ");
-            category = sc.nextLine().trim();
+            try {
+                Display.print("Input Category: ");
+                category = sc.nextLine().trim();
 
-            // Validator here
-            isValid = true;
+                Validate.isValidString(category, "Category cannot be empty or null.");
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return category;
@@ -125,12 +177,17 @@ public class Input {
         double unitPrice = -1;
 
         do {
-            Display.print("Input Unit Price: ");
-            String rawInput = sc.nextLine().trim();
+            try {
+                Display.print("Input Unit Price: ");
+                String rawInput = sc.nextLine().trim();
 
-            // Validator Here
-            unitPrice = Double.parseDouble(rawInput);
-            isValid = true;
+                Validate.isValidDouble(rawInput, "Unit Price");
+                unitPrice = Double.parseDouble(rawInput);
+                
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return unitPrice;
@@ -141,31 +198,40 @@ public class Input {
         int quantity = -1;
 
         do {
-            Display.print("Input Initial Quantity: ");
-            String rawInput = sc.nextLine().trim();
+            try {
+               Display.print("Input Initial Quantity: ");
+                String rawInput = sc.nextLine().trim();
 
-            // Validator here
-            quantity = Integer.parseInt(rawInput);
-            isValid = true;
+                Validate.isValidInteger(rawInput, "Quantity");
+                quantity = Integer.parseInt(rawInput);
+                
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return quantity;
      }
 
-     public int readLowStockLevel() {
+     public int readMinimumStockLevel() {
         boolean isValid = false;
-        int lowStockLevel = -1;
+        int minStockLevel = -1;
 
         do {
-            Display.print("Input Minimum Stock for Medicine: ");
-            String rawInput = sc.nextLine().trim();
+            try {
+               Display.print("Input Minimum Stock for Medicine: ");
+                String rawInput = sc.nextLine().trim();
 
-            // Validator here
-            lowStockLevel = Integer.parseInt(rawInput);
-            isValid = true;
+                Validate.isValidInteger(rawInput, "Minimum Stock Level");
+                minStockLevel = Integer.parseInt(rawInput);
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
-        return lowStockLevel;
+        return minStockLevel;
      }
 
      public LocalDate readExpirationDate() {
@@ -173,12 +239,17 @@ public class Input {
         LocalDate expirationDate = null;
 
         do {
-            Display.print("Input Expiration Date of Medicine: ");
-            String rawInput = sc.nextLine().trim();
-
-            // Validator here
-            expirationDate = LocalDate.parse(rawInput);
-            isValid = true;
+            try {
+                Display.print("Input Expiration Date of Medicine: ");
+                String rawInput = sc.nextLine().trim();
+            
+                Validate.date(rawInput);
+                expirationDate = LocalDate.parse(rawInput);
+                
+                isValid = true;
+            } catch (InvalidInputException e) {
+                Display.feedback(e.getMessage());
+            }
         } while (!isValid);
 
         return expirationDate;
