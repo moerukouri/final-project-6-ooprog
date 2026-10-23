@@ -369,6 +369,26 @@ public class Validate {
         return value;
     }
 
+    public static int requireNonNegativeInt(int value, String fieldName) {
+        if (value < 0) {
+            throw new IllegalArgumentException(
+                fieldName + " cannot be negative."
+            );
+        }
+ 
+        return value;
+    }
+
+    public static <T> T requireNonNull(T value, String fieldName) {
+        if (value == null) {
+            throw new IllegalArgumentException(
+                fieldName + " is required."
+            );
+        }
+ 
+        return value;
+    }
+
     public static String requireValidChoice(
             String choice, String[] allowedChoices) {
         requireText(choice, "Choice");

@@ -1,6 +1,7 @@
 package model;
 
 import strategy.AccessStrategy;
+import util.Validate;
 
 public abstract class User {
     private final String userId;
@@ -38,15 +39,15 @@ public abstract class User {
     }
 
     public final void setUsername(String username) {
-        this.username = username;
+        this.username = Validate.requireText(username, "Username");
     }
 
     public final void setFullName(String fullName) {
-        this.fullName = fullName;
+        this.fullName = Validate.requireText(fullName, "Full name");
     }
 
     public final void setPassword(String password) {
-        this.password = password;
+        this.password = Validate.requireText(password, "Password");
     }
 
     public final void setStatus(AccountStatus status) {

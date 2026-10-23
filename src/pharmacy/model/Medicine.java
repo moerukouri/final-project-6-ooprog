@@ -1,6 +1,7 @@
 package model;
 
 import java.time.LocalDate;
+import util.Validate;
 
 public class Medicine {
     public static final int EXPIRY_WINDOW_DAYS = 30;
@@ -28,31 +29,31 @@ public class Medicine {
     }
     
     public final void setBatchNumber(String batchNumber) {
-        this.batchNumber = batchNumber;
+        this.batchNumber = Validate.requireText(batchNumber, "Batch number");
     }
 
     public final void setName(String name) {
-        this.name = name;
+        this.name = Validate.requireText(name, "Medicine name");
     }
 
     public final void setCategory(String category) {
-        this.category = category;
+        this.category = Validate.requireText(category, "Medicine category");
     }
 
     public final void setUnitPrice(double unitPrice) {
-        this.unitPrice = unitPrice;
+        this.unitPrice = Validate.requireNonNegativeFinite(unitPrice, "Unit price");
     }
 
     public final void setQuantity(int quantity) {
-        this.quantity = quantity;
+        this.quantity = Validate.requirePositiveInt(quantity, "Quantity");
     }
 
     public final void setMinStockLevel(int minStockLevel) {
-        this.minStockLevel = minStockLevel;
+        this.minStockLevel = Validate.requireNonNegativeInt(minStockLevel, "Minimum stock level");
     }
 
     public final void setExpirationDate(LocalDate expirationDate) {
-        this.expirationDate = expirationDate;
+        this.expirationDate = Validate.requireNonNull(expirationDate, "Expiration date");
     }
 
     public void updateDetails(String batchNumber, String name, String category, double unitPrice, int quantity, int minStockLevel, LocalDate expirationDate) {
