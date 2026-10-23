@@ -36,8 +36,19 @@ public class MedicineRepository {
                 System.err.println("[Warn] Skipping malformed medicine record: " + line);
             }
         }
+
+        deactivateExpired(medicines);
         
         return medicines;
+    }
+
+    private void deactivateExpired(List<Medicine> medicines) {
+        for (Medicine medicine : medicines) {
+            if (medicine.isExpired() && medicine.isActive()) {
+                medicine.setActive(false);
+                update(medicine);
+            }
+        }
     }
     
     public Optional<Medicine> findByMedicineId(String medicineId) {

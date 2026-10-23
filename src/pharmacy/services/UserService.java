@@ -100,6 +100,8 @@ public class UserService {
 
         User target = found.get();
         showDetails(target);
+
+        Display.title("UPDATE OPTIONS");
         Display.println("1. Change Full Name");
         Display.println("2. Change Password");
         Display.println("3. Change Role");
@@ -120,6 +122,12 @@ public class UserService {
             }
             case 3 -> {
                 updated = changeRole(target);
+
+                if (updated == null) {
+                    Display.feedback("User already has the " + target.getRole().getLabel() + " role. No changes were made.");
+                    return;
+                }
+
                 message = "Role updated to " + updated.getRole().getLabel() + ".";
             }
             case 4 -> {
@@ -144,6 +152,10 @@ public class UserService {
 
         boolean admin = input.readChoice(1, 2) == 1;
 
+        if ((admin ? Role.ADMIN : Role.STAFF) == target.getRole()) {
+            return null;
+        }
+
         return admin ? new Admin(target.getUserId(), target.getUsername(), target.getFullName(), target.getPassword(), target.getStatus()) : new Staff(target.getUserId(), target.getUsername(), target.getFullName(), target.getPassword(), target.getStatus());
     }
 
@@ -167,8 +179,7 @@ public class UserService {
 
         showDetails(target);
 
-        String confirm = input.readText("Are you sure you want to delete this user? (y/n): ");
-        if (!confirm.equalsIgnoreCase("y")) {
+        if (!input.readYesNo("Are you sure you want to delete this user? (y/n): ")) {
             Display.feedback("Delete cancelled.");
             return;
         }
@@ -182,11 +193,14 @@ public class UserService {
         Validate.authorization(admin, Action.SEARCH_USER);
         Display.title("SEARCH USER");
 
-        String username = input.readUsername();
-        User target = users.findByUsername(username).orElse(null);
+        String query = input.readText("Input Username or User ID: ");
+        User target = users.findAll().stream()
+                .filter(u -> u.getUsername().equalsIgnoreCase(query) || u.getUserId().equalsIgnoreCase(query))
+                .findFirst()
+                .orElse(null);
 
         if (target == null) {
-            Display.feedback("No user found with username \"" + username + "\".");
+            Display.feedback("No user found for \"" + query + "\".");
             return;
         }
 
@@ -206,7 +220,13 @@ public class UserService {
             return;
         }
 
-        String newPassword = readPassword();
+        String newPassword = readPassword("Input New Password: ");
+
+        if (user.checkPassword(newPassword)) {
+            Display.feedback("New password cannot be the same as your current password.");
+            return;
+        }
+
         String confirm = input.readPassword("Confirm New Password: ");
 
         if (!newPassword.equals(confirm)) {
@@ -220,18 +240,18 @@ public class UserService {
     }
 
     private String readPassword() {
-        String password = promptPassword();
+        return readPassword("Input Password: ");
+    }
+
+    private String readPassword(String prompt) {
+        String password = input.readPassword(prompt);
 
         while (password.length() < 4) {
             Display.feedback("Password must be at least 4 characters long.");
-            password = promptPassword();
+            password = input.readPassword(prompt);
         }
 
         return password;
-    }
-
-    private String promptPassword() {
-        return input.readPassword("Input Password: ");
     }
 
     private void showDetails(User user) {
@@ -241,5 +261,6 @@ public class UserService {
         Display.println("Full Name: " + user.getFullName());
         Display.println("Role:      " + user.getRole().getLabel());
         Display.println("Status:    " + user.getStatus().getLabel());
+        Display.println();
     }
 }

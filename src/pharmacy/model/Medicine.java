@@ -99,8 +99,8 @@ public class Medicine {
     }
 
     public StockStatus availabilityStatus() {
-        if(!active) return StockStatus.INACTIVE;
         if(isExpired()) return StockStatus.EXPIRED;
+        if(!active) return StockStatus.INACTIVE;
         if(isOutOfStock()) return StockStatus.OUT_OF_STOCK;
         if(isLowStock()) return StockStatus.LOW_STOCK;
         return StockStatus.IN_STOCK;

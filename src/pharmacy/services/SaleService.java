@@ -90,6 +90,15 @@ public class SaleService {
     public void searchSale(User user, boolean ownOnly) {
         Validate.authorization(user, ownOnly ? Action.SEARCH_OWN_SALE : Action.SEARCH_SALE);
 
+        List<Sale> searchable = sales.findAll().stream()
+                .filter(sale -> !ownOnly || sale.getCashierId().equals(user.getUserId()))
+                .collect(Collectors.toList());
+
+        if (searchable.isEmpty()) {
+            Display.feedback(ownOnly ? "You have no sales recorded yet." : "No sales recorded yet.");
+            return;
+        }
+
         Display.title("SEARCH SALE");
         String id = input.readText("Input Sale ID: ");
         Sale sale = sales.findById(id).orElse(null);
@@ -105,20 +114,29 @@ public class SaleService {
     public void recordTransaction(User user) {
         Validate.authorization(user, Action.RECORD_TRANSACTION);
 
-        ArrayList<SaleItem> items = collectItems();
+        ArrayList<SaleItem> items = new ArrayList<>();
 
-        if (items.isEmpty()) {
-            Display.feedback("No items added. Transaction cancelled.");
-            return;
-        }
+        while (true) {
+            int exitChoice = collectItems(items);
 
-        Display.title("REVIEW TRANSACTION");
-        printCart(items);
+            if (exitChoice == 2) {
+                Display.feedback("Transaction cancelled.");
+                return;
+            }
 
-        String confirm = input.readText("Complete this sale? (y/n): ");
-        if (!confirm.equalsIgnoreCase("y")) {
-            Display.feedback("Transaction cancelled.");
-            return;
+            if (items.isEmpty()) {
+                Display.feedback("No items added. Transaction cancelled.");
+                return;
+            }
+
+            Display.title("REVIEW TRANSACTION");
+            printCart(items);
+
+            if (input.readYesNo("Complete this sale? (y/n): ")) {
+                break;
+            }
+
+            Display.feedback("Sale not completed. Your items were kept, you can keep editing the transaction.");
         }
 
         Sale sale = new Sale(sales.nextSaleId(), LocalDateTime.now(), user.getUserId(), items);
@@ -148,8 +166,7 @@ public class SaleService {
             return;
         }
 
-        String confirm = input.readText("Void this sale? (y/n): ");
-        if (!confirm.equalsIgnoreCase("y")) {
+        if (!input.readYesNo("Void this sale? (y/n): ")) {
             Display.feedback("Void cancelled.");
             return;
         }
@@ -161,23 +178,23 @@ public class SaleService {
         Display.feedback("Sale " + sale.getSaleId() + " has been voided and its stock was restored.\nAn audit record was saved.");
     }
 
-    private ArrayList<SaleItem> collectItems() {
-        ArrayList<SaleItem> items = new ArrayList<>();
-        boolean adding = true;
+    private int collectItems(ArrayList<SaleItem> items) {
+        int choice = 1;
 
-        while (adding) {
+        while (choice == 1) {
             Display.title("RECORD TRANSACTION");
             printCart(items);
             Display.println("1. Add Item");
+            Display.println("2. Cancel Transaction");
             Display.println("0. Finish Transaction");
 
-            adding = input.readChoice(0, 1) == 1;
-            if (adding) {
+            choice = input.readChoice(0, 2);
+            if (choice == 1) {
                 tryAddItem(items);
             }
         }
 
-        return items;
+        return choice;
     }
 
     private void tryAddItem(ArrayList<SaleItem> items) {
@@ -189,15 +206,15 @@ public class SaleService {
             return;
         }
 
-        if (!medicine.isActive()) {
-            Display.feedback(medicine.getName() + " is inactive and cannot be sold.");
-            return;
-        }
-
         try {
             checkNotExpired(medicine);
         } catch (ExpiredMedicineException e) {
             Display.feedback(e.getMessage());
+            return;
+        }
+
+        if (!medicine.isActive()) {
+            Display.feedback(medicine.getName() + " is inactive and cannot be sold.");
             return;
         }
 

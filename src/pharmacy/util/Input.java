@@ -55,6 +55,23 @@ public class Input {
         return choice;
     }
 
+    public boolean readYesNo(String prompt) {
+        while (true) {
+            Display.print(prompt);
+            String answer = sc.nextLine().trim();
+
+            if (answer.equalsIgnoreCase("y")) {
+                return true;
+            }
+
+            if (answer.equalsIgnoreCase("n")) {
+                return false;
+            }
+
+            Display.feedback("Please enter only y or n.");
+        }
+    }
+
     public String readUserId() {
         boolean isValid = false;
         String id = null;
@@ -210,12 +227,16 @@ public class Input {
     }
 
      public int readQuantity() {
+        return readQuantity("Input Initial Quantity: ");
+     }
+
+     public int readQuantity(String prompt) {
         boolean isValid = false;
         int quantity = -1;
 
         do {
             try {
-               Display.print("Input Initial Quantity: ");
+               Display.print(prompt);
                 String rawInput = sc.nextLine().trim();
 
                 Validate.isValidNonNegativeInteger(rawInput, "Quantity");
@@ -259,7 +280,7 @@ public class Input {
                 Display.print("Input Expiration Date of Medicine: ");
                 String rawInput = sc.nextLine().trim();
             
-                Validate.date(rawInput);
+                Validate.notPastDate(rawInput);
                 expirationDate = LocalDate.parse(rawInput);
                 
                 isValid = true;
@@ -270,4 +291,4 @@ public class Input {
 
         return expirationDate;
      }
-}   
+}

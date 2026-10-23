@@ -100,23 +100,30 @@ public class ReportService {
 
         List<Medicine> active = filter(all, Medicine::isActive);
 
-        long expired = active.stream().filter(Medicine::isExpired).count();
+        long expired = all.stream().filter(Medicine::isExpired).count();
+        long activeExpired = active.stream().filter(Medicine::isExpired).count();
         long outOfStock = active.stream().filter(m -> !m.isExpired() && m.isOutOfStock()).count();
         long lowStock = active.stream().filter(m -> !m.isExpired() && !m.isOutOfStock() && m.isLowStock()).count();
-        long inStock = active.size() - expired - outOfStock - lowStock;
+        long inStock = active.size() - activeExpired - outOfStock - lowStock;
 
         double inventoryValue = all.stream().mapToDouble(m -> m.getUnitPrice() * m.getQuantity()).sum();
 
-        Display.feedback("Inventory summary:\nTotal medicines: " + all.size() + "\nIn stock: " + inStock + "\nLow stock: " + lowStock + "\nOut of stock: " + outOfStock + "\nExpired: " + expired + "\nTotal inventory value: " + money(inventoryValue));
-        Table.medicines(all);
+        Display.println("Total medicines:       " + all.size());
+        Display.println("In stock:              " + inStock);
+        Display.println("Low stock:             " + lowStock);
+        Display.println("Out of stock:          " + outOfStock);
+        Display.println("Expired:               " + expired);
+        Display.println("Total inventory value: " + money(inventoryValue));
+        Display.println();
     }
 
     private void stockAlerts() {
         Display.title("LOW STOCK AND EXPIRED MEDICINES");
 
-        List<Medicine> active = filter(medicines.findAll(), Medicine::isActive);
+        List<Medicine> allMedicines = medicines.findAll();
+        List<Medicine> active = filter(allMedicines, Medicine::isActive);
 
-        List<Medicine> expired = filter(active, Medicine::isExpired);
+        List<Medicine> expired = filter(allMedicines, Medicine::isExpired);
         List<Medicine> nearExpiry = filter(active, m -> !m.isExpired() && m.isNearExpiry(Medicine.EXPIRY_WINDOW_DAYS));
         List<Medicine> outOfStock = filter(active, Medicine::isOutOfStock);
         List<Medicine> lowStock = filter(active, m -> !m.isOutOfStock() && m.isLowStock());

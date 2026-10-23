@@ -69,6 +69,14 @@ public class Validate {
         }
     }
 
+    public static void notPastDate(String date) {
+        date(date);
+
+        if (LocalDate.parse(date).isBefore(LocalDate.now())) {
+            throw new InvalidInputException("Expiration date has already passed. Enter today's date or later.");
+        }
+    }
+
     public static int isValidInteger(String integer, String numberName) {
         isValidString(integer, numberName + " is empty.");
 

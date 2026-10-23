@@ -61,9 +61,9 @@ public class MedicineService {
         Validate.authorization(user, Action.SEARCH_MEDICINE);
         Display.title("SEARCH MEDICINE");
 
-        String query = input.readText("Input Medicine Name or Category: ");
+        String query = input.readText("Input Medicine Name, Category or ID: ");
         String needle = query.toLowerCase();
-        List<Medicine> matches = filter(medicines.findAll(), m -> m.getName().toLowerCase().contains(needle) || m.getCategory().toLowerCase().contains(needle));
+        List<Medicine> matches = filter(medicines.findAll(), m -> m.getMedicineId().equalsIgnoreCase(query) || m.getName().toLowerCase().contains(needle) || m.getCategory().toLowerCase().contains(needle));
 
         if (matches.isEmpty()) {
             Display.feedback("No medicine found for \"" + query + "\".");
@@ -99,12 +99,39 @@ public class MedicineService {
 
         showDetails(medicine);
 
-        medicine.updateDetails(
-                input.readText("Input Batch Number: "), input.readMedicineName(), input.readCategory(), input.readUnitPrice(), input.readQuantity(), input.readMinimumStockLevel(), input.readExpirationDate()
-        );
+        Display.title("UPDATE OPTIONS");
+        Display.println("1. Change Batch Number");
+        Display.println("2. Change Name");
+        Display.println("3. Change Category");
+        Display.println("4. Change Unit Price");
+        Display.println("5. Change Quantity");
+        Display.println("6. Change Minimum Stock Level");
+        Display.println("7. Change Expiration Date");
+        Display.println("0. Back");
+
+        int choice = input.readChoice(0, 7);
+
+        switch (choice) {
+            case 1 -> medicine.setBatchNumber(input.readBatchNumber());
+            case 2 -> medicine.setName(input.readMedicineName());
+            case 3 -> medicine.setCategory(input.readCategory());
+            case 4 -> medicine.setUnitPrice(input.readUnitPrice());
+            case 5 -> medicine.setQuantity(input.readQuantity("Input Quantity: "));
+            case 6 -> medicine.setMinStockLevel(input.readMinimumStockLevel());
+            case 7 -> medicine.setExpirationDate(input.readExpirationDate());
+            case 0 -> {
+                return;
+            }
+        }
 
         medicines.update(medicine);
-        Display.feedback("Medicine " + medicine.getMedicineId() + " updated successfully.");
+        String message = "Medicine " + medicine.getMedicineId() + " updated successfully.";
+
+        if (choice == 7 && !medicine.isActive()) {
+            message += "\nThe medicine is still inactive. Use Activate / Deactivate Medicine to make it active again.";
+        }
+
+        Display.feedback(message);
     }
 
     private void deleteMedicine(User user) {
@@ -121,8 +148,7 @@ public class MedicineService {
 
         showDetails(medicine);
 
-        String confirm = input.readText("Are you sure you want to delete this medicine? (y/n): ");
-        if (!confirm.equalsIgnoreCase("y")) {
+        if (!input.readYesNo("Are you sure you want to delete this medicine? (y/n): ")) {
             Display.feedback("Delete cancelled.");
             return;
         }
@@ -145,9 +171,13 @@ public class MedicineService {
 
         showDetails(medicine);
 
+        if (!medicine.isActive() && medicine.isExpired()) {
+            Display.feedback("Expired medicine cannot be activated. Update its expiration date first.");
+            return;
+        }
+
         String verb = medicine.isActive() ? "deactivate" : "activate";
-        String confirm = input.readText("Are you sure you want to " + verb + " this medicine? (y/n): ");
-        if (!confirm.equalsIgnoreCase("y")) {
+        if (!input.readYesNo("Are you sure you want to " + verb + " this medicine? (y/n): ")) {
             Display.feedback("Cancelled. No changes were made.");
             return;
         }
@@ -174,12 +204,14 @@ public class MedicineService {
         Display.println("Min Stock Level: " + medicine.getMinStockLevel());
         Display.println("Expiration Date: " + medicine.getExpirationDate());
         Display.println("Status:          " + medicine.availabilityStatus().getLabel());
+        Display.println();
     }
 
     private void showStockAlerts() {
-        List<Medicine> active = filter(medicines.findAll(), Medicine::isActive);
+        List<Medicine> all = medicines.findAll();
+        List<Medicine> active = filter(all, Medicine::isActive);
 
-        List<Medicine> expired = filter(active, Medicine::isExpired);
+        List<Medicine> expired = filter(all, Medicine::isExpired);
         List<Medicine> nearExpiry = filter(active, m -> !m.isExpired() && m.isNearExpiry(Medicine.EXPIRY_WINDOW_DAYS));
         List<Medicine> outOfStock = filter(active, Medicine::isOutOfStock);
         List<Medicine> lowStock = filter(active, m -> !m.isOutOfStock() && m.isLowStock());
