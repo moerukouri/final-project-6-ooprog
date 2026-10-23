@@ -93,7 +93,7 @@ public class UserRepository {
         String line = FileHandler.retrieveLine(userId, 0, USERS_PATH);
         
         if (line == null || !FileHandler.delete(line, USERS_PATH)) {
-            throw new IllegalUserException(userId);
+            throw new PharmacyException("Unable to delete line in User.");
         }
     }
 
