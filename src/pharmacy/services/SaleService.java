@@ -135,6 +135,8 @@ public class SaleService {
 
             if (input.readYesNo("Complete this sale? (y/n): ")) {
                 running = false;
+            } else {
+                Display.feedback("Sale not completed. Your cart was kept. " + "You can add more items or cancel.");
             }
 
             Display.feedback("Sale not completed. Your items were kept, you can keep editing the transaction.");
