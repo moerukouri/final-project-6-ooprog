@@ -4,7 +4,6 @@ import exception.AccessDeniedException;
 import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Base64;
 import model.Admin;
 import model.Medicine;
 import model.PurchaseRequest;
@@ -17,8 +16,6 @@ import strategy.AccessStrategy;
 import strategy.Action;
 
 public class Validate {
-    private static final int SALT_LENGTH_BYTES = 16;
-    private static final int HASH_LENGTH_BYTES = 32;
 
     private Validate() {} // Prevents Instantiation
 
@@ -40,11 +37,11 @@ public class Validate {
             throw new IllegalArgumentException("Medicine cannot be null.");
         }
 
-        requireText(medicine.getMedicineId(), "Medicine ID");
-        requireText(medicine.getBatchNumber(), "Batch number");
+        validateId(medicine.getMedicineId(), "Medicine ID");
+        validateId(medicine.getBatchNumber(), "Batch number");
         requireText(medicine.getName(), "Medicine name");
         requireText(medicine.getCategory(), "Medicine category");
-
+        
         if (!Double.isFinite(medicine.getUnitPrice())
                 || medicine.getUnitPrice() < 0) {
             throw new IllegalArgumentException(
@@ -90,12 +87,7 @@ public class Validate {
             );
         }
 
-        if (request.getMedicineId() == null
-                || request.getMedicineId().isBlank()) {
-            throw new IllegalArgumentException(
-                "Medicine ID is required."
-            );
-        }
+        validateId(request.getMedicineId(), "Medicine ID");
 
         if (request.getQuantity() <= 0) {
             throw new IllegalArgumentException(
@@ -111,12 +103,7 @@ public class Validate {
             );
         }
 
-        if (item.getMedicineId() == null
-                || item.getMedicineId().isBlank()) {
-            throw new IllegalArgumentException(
-                "Medicine ID is required."
-            );
-        }
+        validateId(item.getMedicineId(), "Medicine ID");
 
         if (item.getMedicineName() == null
                 || item.getMedicineName().isBlank()) {
@@ -154,8 +141,8 @@ public class Validate {
             );
         }
 
-        requireText(sale.getSaleId(), "Sale ID");
-        requireText(sale.getCashierId(), "Cashier ID");
+        validateId(sale.getSaleId(), "Sale ID");
+        validateId(sale.getCashierId(), "Cashier ID");
 
         if (sale.getTimestamp() == null) {
             throw new IllegalArgumentException(
@@ -195,11 +182,10 @@ public class Validate {
             );
         }
 
-        requireText(user.getUserId(), "User ID");
+        validateId(user.getUserId(), "User ID");
         requireText(user.getUsername(), "Username");
         requireText(user.getFullName(), "Full name");
-        requireText(user.passwordHash(), "Password hash");
-        requireText(user.getSalt(), "Password salt");
+        requireText(user.getPassword(), "Password");
 
         if (user.getStatus() == null) {
             throw new IllegalArgumentException(
@@ -261,8 +247,9 @@ public class Validate {
                 );
             }
 
-            if (user.getUserId() == null
-                    || user.getUsername() == null
+            validateId(user.getUserId(), "User ID");
+
+            if (user.getUsername() == null
                     || user.getFullName() == null
                     || user.getRole() == null
                     || user.getStatus() == null) {
@@ -288,9 +275,10 @@ public class Validate {
                 );
             }
 
-            if (medicine.getMedicineId() == null
-                    || medicine.getBatchNumber() == null
-                    || medicine.getName() == null
+            validateId(medicine.getMedicineId(), "Medicine ID");
+            validateId(medicine.getBatchNumber(), "Batch number");
+
+            if (medicine.getName() == null
                     || medicine.getCategory() == null
                     || medicine.getExpirationDate() == null) {
                 throw new IllegalArgumentException(
@@ -314,9 +302,10 @@ public class Validate {
                 );
             }
 
-            if (sale.getSaleId() == null
-                    || sale.getTimestamp() == null
-                    || sale.getCashierId() == null) {
+            validateId(sale.getSaleId(), "Sale ID");
+            validateId(sale.getCashierId(), "Cashier ID");
+
+            if (sale.getTimestamp() == null) {
                 throw new IllegalArgumentException(
                     "Sale contains missing display data."
                 );
@@ -393,7 +382,7 @@ public class Validate {
             "Invalid choice: " + choice
         );
     }
-    //PASSWORDHASHER VALIDATION
+    //PASSWORD VALIDATION
     public static void validatePassword(String password) {
         if (password == null || password.isEmpty()) {
             throw new IllegalArgumentException(
@@ -402,71 +391,9 @@ public class Validate {
         }
     }
 
-    public static void validateSalt(String salt) {
-        if (salt == null || salt.isBlank()) {
-            throw new IllegalArgumentException(
-                "Salt cannot be null or empty."
-            );
-        }
-
-        try {
-            byte[] decoded = Base64.getDecoder().decode(salt);
-
-            if (decoded.length != SALT_LENGTH_BYTES) {
-                throw new IllegalArgumentException(
-                    "Salt must decode to 16 bytes."
-                );
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                "Salt must be valid Base64 containing 16 bytes.", e
-            );
-        }
-    }
-
-    public static void validateStoredHash(String storedHash) {
-        if (storedHash == null || storedHash.isBlank()) {
-            throw new IllegalArgumentException(
-                "Stored password hash cannot be empty."
-            );
-        }
-
-        try {
-            byte[] decoded = Base64.getDecoder().decode(storedHash);
-
-            if (decoded.length != HASH_LENGTH_BYTES) {
-                throw new IllegalArgumentException(
-                    "Password hash must decode to 32 bytes."
-                );
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                "Stored hash must be valid Base64 containing 32 bytes.", e
-            );
-        }
-    }
-
-    public static void validateHashInputs(
-            String password, String salt) {
-        validatePassword(password);
-        validateSalt(salt);
-    }
-
-    public static void validateVerificationInputs(
-            String password, String salt, String storedHash) {
-        validatePassword(password);
-        validateSalt(salt);
-        validateStoredHash(storedHash);
-    }
     //REPOSITORY VALIDATION
     public static void validateUserId(String userId) {
-        requireText(userId, "User ID");
-
-        if (userId.contains("|")) {
-            throw new IllegalArgumentException(
-                "User ID cannot contain '|'."
-            );
-        }
+        validateId(userId, "User ID");
     }
 
     public static void validateUsername(String username) {
@@ -480,7 +407,7 @@ public class Validate {
             );
         }
 
-        validateField(user.getUserId(), "User ID");
+        validateId(user.getUserId(), "User ID");
         validateField(user.getUsername(), "Username");
         validateField(user.getFullName(), "Full name");
 
@@ -496,8 +423,7 @@ public class Validate {
             );
         }
 
-        validateField(user.passwordHash(), "Password hash");
-        validateField(user.getSalt(), "Salt");
+        validateField(user.getPassword(), "Password");
     }
 
     public static void validateRecord(String line) {
@@ -548,16 +474,26 @@ public class Validate {
     }
 
     public static void validateId(String id) {
+        validateId(id, "ID");
+    }
+
+    private static void validateId(String id, String fieldName) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException(
-                "ID cannot be empty."
+                fieldName + " cannot be empty."
             );
-
         }
 
-        if (id.contains("|")) {
+        if (!id.equals(id.trim())) {
             throw new IllegalArgumentException(
-                "ID cannot contain '|'."
+                fieldName + " cannot start or end with whitespace."
+            );
+        }
+
+        if (id.contains("|") || id.contains("\n")
+                || id.contains("\r")) {
+            throw new IllegalArgumentException(
+                fieldName + " contains invalid characters."
             );
         }
     }
@@ -688,4 +624,3 @@ public class Validate {
         return accessStrategy.isAllowed(action);
     }
 }
-
