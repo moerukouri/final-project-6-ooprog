@@ -150,18 +150,16 @@ public class Input {
         return medicineName;
     }
 
-    public LocalDate readBatchNumber() {
+    public String readBatchNumber() {
         boolean isValid = false;
-        LocalDate batchNumber = null;
+        String batchNumber = null;
 
         do {
             try {
                 Display.print("Input Batch Number: ");
-                String rawInput = sc.nextLine().trim();
-            
-                Validate.date(rawInput);
-                batchNumber = LocalDate.parse(rawInput);
-                
+                batchNumber = sc.nextLine().trim();
+
+                Validate.isValidString(batchNumber, "Batch Number cannot be empty or null.");
                 isValid = true;
             } catch (InvalidInputException e) {
                 Display.feedback(e.getMessage());
