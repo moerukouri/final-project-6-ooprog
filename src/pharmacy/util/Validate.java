@@ -130,8 +130,12 @@ public class Validate {
     public static void isValidString(String string, String errorMessage) {
         string = string.trim().strip();
 
-        if (string.isBlank() || string.isEmpty() || string.contains("|")) {
+        if (string.isBlank() || string.isEmpty()) {
             throw new InvalidInputException(errorMessage);
+        }
+
+        if (string.contains("|")) {
+            throw new InvalidInputException("Input cannot contain the '|' delimiter.");
         }
     }
 
