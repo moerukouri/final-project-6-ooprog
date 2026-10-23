@@ -1,14 +1,13 @@
 package repository;
 
+import exception.FileStorageException;
+import exception.IllegalUserException;
 import io.FileCreator;
 import io.FileHandler;
 import io.FilePath;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import exception.FileStorageException;
-import exception.IllegalUserException;
 import model.AccountStatus;
 import model.Admin;
 import model.Role;
@@ -16,7 +15,7 @@ import model.Staff;
 import model.User;
 
 public class UserRepository {
-    private static final int FIELD_COUNT = 7;
+    private static final int FIELD_COUNT = 6;
     private static final String USERS_PATH = FilePath.USERS_PATH.getFilePath();
 
     public UserRepository() {
@@ -86,6 +85,14 @@ public class UserRepository {
         }
     }
 
+    public void removeById(String userId) {
+        String line = FileHandler.retrieveLine(userId, 0, USERS_PATH);
+        
+        if (line == null || !FileHandler.delete(line, USERS_PATH)) {
+            throw new IllegalUserException(userId);
+        }
+    }
+
     private static User parse(String line) {
         String[] f = line.split("\\|", -1);
         
@@ -100,17 +107,16 @@ public class UserRepository {
         Role role = Role.valueOf(f[3].trim().toUpperCase());
         AccountStatus status = AccountStatus.valueOf(f[4].trim().toUpperCase());
         
-        String passwordHash = f[5];
-        String salt = f[6];
+        String password = f[5];
         
-        if (userId.isBlank() || username.isBlank() || fullName.isBlank() || passwordHash.isBlank() || salt.isBlank()) {
+        if (userId.isBlank() || username.isBlank() || fullName.isBlank() || password.isBlank()) {
             throw new FileStorageException(line);
         }
         
-        return role == Role.ADMIN ? new Admin(userId, username, fullName, passwordHash, salt, status) : new Staff(userId, username, fullName, passwordHash, salt, status);
+        return role == Role.ADMIN ? new Admin(userId, username, fullName, password, status) : new Staff(userId, username, fullName, password, status);
     }
 
     private static String serialize(User user) {
-        return String.join("|", user.getUserId(), user.getUsername(), user.getFullName(), user.getRole().getLabel(), user.getStatus().getLabel(), user.passwordHash(), user.getSalt());
+        return String.join("|", user.getUserId(), user.getUsername(), user.getFullName(), user.getRole().getLabel(), user.getStatus().getLabel(), user.getPassword());
     }
 }

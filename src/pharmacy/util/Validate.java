@@ -42,6 +42,11 @@ public class Validate {
         requireText(medicine.getName(), "Medicine name");
         requireText(medicine.getCategory(), "Medicine category");
         
+        requireText(medicine.getMedicineId(), "Medicine ID");
+        requireText(medicine.getBatchNumber(), "Batch number");
+        requireText(medicine.getName(), "Medicine name");
+        requireText(medicine.getCategory(), "Medicine category");
+
         if (!Double.isFinite(medicine.getUnitPrice())
                 || medicine.getUnitPrice() < 0) {
             throw new IllegalArgumentException(
@@ -88,6 +93,12 @@ public class Validate {
         }
 
         validateId(request.getMedicineId(), "Medicine ID");
+        if (request.getMedicineId() == null
+                || request.getMedicineId().isBlank()) {
+            throw new IllegalArgumentException(
+                "Medicine ID is required."
+            );
+        }
 
         if (request.getQuantity() <= 0) {
             throw new IllegalArgumentException(
@@ -104,6 +115,12 @@ public class Validate {
         }
 
         validateId(item.getMedicineId(), "Medicine ID");
+        if (item.getMedicineId() == null
+                || item.getMedicineId().isBlank()) {
+            throw new IllegalArgumentException(
+                "Medicine ID is required."
+            );
+        }
 
         if (item.getMedicineName() == null
                 || item.getMedicineName().isBlank()) {
@@ -143,6 +160,8 @@ public class Validate {
 
         validateId(sale.getSaleId(), "Sale ID");
         validateId(sale.getCashierId(), "Cashier ID");
+        requireText(sale.getSaleId(), "Sale ID");
+        requireText(sale.getCashierId(), "Cashier ID");
 
         if (sale.getTimestamp() == null) {
             throw new IllegalArgumentException(
@@ -183,6 +202,7 @@ public class Validate {
         }
 
         validateId(user.getUserId(), "User ID");
+        requireText(user.getUserId(), "User ID");
         requireText(user.getUsername(), "Username");
         requireText(user.getFullName(), "Full name");
         requireText(user.getPassword(), "Password");
@@ -250,6 +270,8 @@ public class Validate {
             validateId(user.getUserId(), "User ID");
 
             if (user.getUsername() == null
+            if (user.getUserId() == null
+                    || user.getUsername() == null
                     || user.getFullName() == null
                     || user.getRole() == null
                     || user.getStatus() == null) {
@@ -279,6 +301,9 @@ public class Validate {
             validateId(medicine.getBatchNumber(), "Batch number");
 
             if (medicine.getName() == null
+            if (medicine.getMedicineId() == null
+                    || medicine.getBatchNumber() == null
+                    || medicine.getName() == null
                     || medicine.getCategory() == null
                     || medicine.getExpirationDate() == null) {
                 throw new IllegalArgumentException(
@@ -306,6 +331,9 @@ public class Validate {
             validateId(sale.getCashierId(), "Cashier ID");
 
             if (sale.getTimestamp() == null) {
+            if (sale.getSaleId() == null
+                    || sale.getTimestamp() == null
+                    || sale.getCashierId() == null) {
                 throw new IllegalArgumentException(
                     "Sale contains missing display data."
                 );
@@ -362,6 +390,26 @@ public class Validate {
         return value;
     }
 
+    public static int requireNonNegativeInt(int value, String fieldName) {
+        if (value < 0) {
+            throw new IllegalArgumentException(
+                fieldName + " cannot be negative."
+            );
+        }
+ 
+        return value;
+    }
+
+    public static <T> T requireNonNull(T value, String fieldName) {
+        if (value == null) {
+            throw new IllegalArgumentException(
+                fieldName + " is required."
+            );
+        }
+ 
+        return value;
+    }
+
     public static String requireValidChoice(
             String choice, String[] allowedChoices) {
         requireText(choice, "Choice");
@@ -394,6 +442,13 @@ public class Validate {
     //REPOSITORY VALIDATION
     public static void validateUserId(String userId) {
         validateId(userId, "User ID");
+        requireText(userId, "User ID");
+
+        if (userId.contains("|")) {
+            throw new IllegalArgumentException(
+                "User ID cannot contain '|'."
+            );
+        }
     }
 
     public static void validateUsername(String username) {
@@ -408,6 +463,7 @@ public class Validate {
         }
 
         validateId(user.getUserId(), "User ID");
+        validateField(user.getUserId(), "User ID");
         validateField(user.getUsername(), "Username");
         validateField(user.getFullName(), "Full name");
 
@@ -494,6 +550,16 @@ public class Validate {
                 || id.contains("\r")) {
             throw new IllegalArgumentException(
                 fieldName + " contains invalid characters."
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException(
+                "ID cannot be empty."
+            );
+
+        }
+
+        if (id.contains("|")) {
+            throw new IllegalArgumentException(
+                "ID cannot contain '|'."
             );
         }
     }
@@ -624,3 +690,5 @@ public class Validate {
         return accessStrategy.isAllowed(action);
     }
 }
+}
+

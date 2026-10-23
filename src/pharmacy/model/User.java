@@ -1,22 +1,20 @@
 package model;
 
 import strategy.AccessStrategy;
-import util.PasswordHasher;
+import util.Validate;
 
 public abstract class User {
     private final String userId;
     private String username;
     private String fullName;
-    private String passwordHash;
-    private String salt;
+    private String password;
     private AccountStatus status;
 
-    protected User(String userId, String username, String fullName, String passwordHash, String salt, AccountStatus status) {
+    protected User(String userId, String username, String fullName, String password, AccountStatus status) {
         this.userId = userId;
         setUsername(username);
         setFullName(fullName);
-        setPasswordHash(passwordHash);
-        setSalt(salt);
+        setPassword(password);
         setStatus(status);
     }
 
@@ -32,12 +30,8 @@ public abstract class User {
         return username;
     }
 
-    public String passwordHash() {
-        return passwordHash;
-    }
-
-    public String getSalt() {
-        return salt;
+    public String getPassword() {
+        return password;
     }
 
     public AccountStatus getStatus() {
@@ -45,19 +39,15 @@ public abstract class User {
     }
 
     public final void setUsername(String username) {
-        this.username = username;
+        this.username = Validate.requireText(username, "Username");
     }
 
     public final void setFullName(String fullName) {
-        this.fullName = fullName;
+        this.fullName = Validate.requireText(fullName, "Full name");
     }
 
-    public final void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    public final void setSalt(String salt) {
-        this.salt = salt;
+    public final void setPassword(String password) {
+        this.password = Validate.requireText(password, "Password");
     }
 
     public final void setStatus(AccountStatus status) {
@@ -69,7 +59,7 @@ public abstract class User {
     }
 
     public boolean checkPassword(String candidate) {
-        return candidate != null && PasswordHasher.verify(candidate, salt, passwordHash);
+        return candidate != null && candidate.equals(password);
     }
 
     public abstract Role getRole();
