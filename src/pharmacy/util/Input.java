@@ -65,10 +65,12 @@ public class Input {
 
             if (answer.equalsIgnoreCase("y")) {
                 output = true;
+                isValid = true;
             }
 
             if (answer.equalsIgnoreCase("n")) {
                 output = false;
+                isValid = true;
             }
 
             Display.feedback("Please enter only y or n.");
