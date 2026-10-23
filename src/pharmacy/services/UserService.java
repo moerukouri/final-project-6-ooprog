@@ -234,6 +234,11 @@ public class UserService {
             return;
         }
 
+        if (newPassword.equals(current)) {
+            Display.feedback("New password must be different from your current password.");
+            return;
+        }
+
         user.setPassword(newPassword);
         users.replace(user.getUserId(), user);
         Display.feedback("Your password has been changed.");
