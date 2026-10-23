@@ -37,6 +37,11 @@ public class Validate {
             throw new IllegalArgumentException("Medicine cannot be null.");
         }
 
+        validateId(medicine.getMedicineId(), "Medicine ID");
+        validateId(medicine.getBatchNumber(), "Batch number");
+        requireText(medicine.getName(), "Medicine name");
+        requireText(medicine.getCategory(), "Medicine category");
+        
         requireText(medicine.getMedicineId(), "Medicine ID");
         requireText(medicine.getBatchNumber(), "Batch number");
         requireText(medicine.getName(), "Medicine name");
@@ -87,6 +92,7 @@ public class Validate {
             );
         }
 
+        validateId(request.getMedicineId(), "Medicine ID");
         if (request.getMedicineId() == null
                 || request.getMedicineId().isBlank()) {
             throw new IllegalArgumentException(
@@ -108,6 +114,7 @@ public class Validate {
             );
         }
 
+        validateId(item.getMedicineId(), "Medicine ID");
         if (item.getMedicineId() == null
                 || item.getMedicineId().isBlank()) {
             throw new IllegalArgumentException(
@@ -151,6 +158,8 @@ public class Validate {
             );
         }
 
+        validateId(sale.getSaleId(), "Sale ID");
+        validateId(sale.getCashierId(), "Cashier ID");
         requireText(sale.getSaleId(), "Sale ID");
         requireText(sale.getCashierId(), "Cashier ID");
 
@@ -192,6 +201,7 @@ public class Validate {
             );
         }
 
+        validateId(user.getUserId(), "User ID");
         requireText(user.getUserId(), "User ID");
         requireText(user.getUsername(), "Username");
         requireText(user.getFullName(), "Full name");
@@ -257,6 +267,9 @@ public class Validate {
                 );
             }
 
+            validateId(user.getUserId(), "User ID");
+
+            if (user.getUsername() == null
             if (user.getUserId() == null
                     || user.getUsername() == null
                     || user.getFullName() == null
@@ -284,6 +297,10 @@ public class Validate {
                 );
             }
 
+            validateId(medicine.getMedicineId(), "Medicine ID");
+            validateId(medicine.getBatchNumber(), "Batch number");
+
+            if (medicine.getName() == null
             if (medicine.getMedicineId() == null
                     || medicine.getBatchNumber() == null
                     || medicine.getName() == null
@@ -310,6 +327,10 @@ public class Validate {
                 );
             }
 
+            validateId(sale.getSaleId(), "Sale ID");
+            validateId(sale.getCashierId(), "Cashier ID");
+
+            if (sale.getTimestamp() == null) {
             if (sale.getSaleId() == null
                     || sale.getTimestamp() == null
                     || sale.getCashierId() == null) {
@@ -420,6 +441,7 @@ public class Validate {
 
     //REPOSITORY VALIDATION
     public static void validateUserId(String userId) {
+        validateId(userId, "User ID");
         requireText(userId, "User ID");
 
         if (userId.contains("|")) {
@@ -440,6 +462,7 @@ public class Validate {
             );
         }
 
+        validateId(user.getUserId(), "User ID");
         validateField(user.getUserId(), "User ID");
         validateField(user.getUsername(), "Username");
         validateField(user.getFullName(), "Full name");
@@ -507,6 +530,26 @@ public class Validate {
     }
 
     public static void validateId(String id) {
+        validateId(id, "ID");
+    }
+
+    private static void validateId(String id, String fieldName) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException(
+                fieldName + " cannot be empty."
+            );
+        }
+
+        if (!id.equals(id.trim())) {
+            throw new IllegalArgumentException(
+                fieldName + " cannot start or end with whitespace."
+            );
+        }
+
+        if (id.contains("|") || id.contains("\n")
+                || id.contains("\r")) {
+            throw new IllegalArgumentException(
+                fieldName + " contains invalid characters."
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException(
                 "ID cannot be empty."
@@ -646,5 +689,6 @@ public class Validate {
 
         return accessStrategy.isAllowed(action);
     }
+}
 }
 
