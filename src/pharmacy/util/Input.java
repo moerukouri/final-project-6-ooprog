@@ -1,15 +1,14 @@
 package util;
 
+import exception.InvalidInputException;
 import java.time.LocalDate;
 import java.util.Scanner;
-
-import exception.InvalidInputException;
 import ui.Display;
 
 public class Input {
     private Input() {} // Prevents Instantiation
     
-    private static Input INSTANCE = new Input();
+    private static final Input INSTANCE = new Input();
     private final Scanner sc = new Scanner(System.in);
 
     public static Input getInstance() {

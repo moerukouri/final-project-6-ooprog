@@ -3,11 +3,11 @@ package util;
 import exception.AccessDeniedException;
 import exception.InvalidInputException;
 import exception.PharmacyException;
-import java.util.List;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
+import java.util.List;
 import model.Admin;
 import model.Medicine;
 import model.PurchaseRequest;
@@ -133,7 +133,7 @@ public class Validate {
     public static void isValidString(String string, String errorMessage) {
         string = string.trim().strip();
 
-        if (string.isBlank() || string.isEmpty() || string.equals(null)) {
+        if (string.isBlank() || string.isEmpty()) {
             throw new InvalidInputException(errorMessage);
         }
     }
