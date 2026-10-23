@@ -3,7 +3,6 @@ package services;
 import exception.InvalidInputException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import model.Medicine;
@@ -186,6 +185,6 @@ public class ReportService {
     }
 
     private static String money(double amount) {
-        return String.format(Locale.ROOT, "%.2f", amount);
+        return String.format("P%.2f", amount);
     }
 }

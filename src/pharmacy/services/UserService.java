@@ -167,7 +167,7 @@ public class UserService {
 
         showDetails(target);
 
-        String confirm = input.readText("Are you sure you want to delete this user? (y/n)");
+        String confirm = input.readText("Are you sure you want to delete this user? (y/n): ");
         if (!confirm.equalsIgnoreCase("y")) {
             Display.feedback("Delete cancelled.");
             return;
@@ -199,7 +199,7 @@ public class UserService {
         Validate.authorization(user, Action.CHANGE_OWN_PASSWORD);
         Display.title("CHANGE MY PASSWORD");
 
-        String current = input.readPassword("Input Current Password");
+        String current = input.readPassword("Input Current Password: ");
 
         if (!user.checkPassword(current)) {
             Display.feedback("Current password is incorrect.");
@@ -207,7 +207,7 @@ public class UserService {
         }
 
         String newPassword = readPassword();
-        String confirm = input.readPassword("Confirm New Password");
+        String confirm = input.readPassword("Confirm New Password: ");
 
         if (!newPassword.equals(confirm)) {
             Display.feedback("New passwords do not match.");
@@ -231,7 +231,7 @@ public class UserService {
     }
 
     private String promptPassword() {
-        return input.readPassword("Input Password");
+        return input.readPassword("Input Password: ");
     }
 
     private void showDetails(User user) {

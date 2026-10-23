@@ -202,11 +202,6 @@ public class SaleService {
         }
 
         int available = medicine.getQuantity() - quantityAlreadyAdded(items, medicine.getMedicineId());
-        if (available <= 0) {
-            Display.feedback("Insufficient stock for " + medicine.getName() + ". Available: " + available + ".");
-            return;
-        }
-
         int quantity = readQuantity();
         try {
             checkStock(medicine, quantity, available);
@@ -228,7 +223,7 @@ public class SaleService {
     }
 
     private void checkStock(Medicine medicine, int requested, int available) {
-        if (requested > available) {
+        if (requested > available || available <= 0) {
             throw new InsufficientStockException(medicine.getName(), requested, available);
         }
     }

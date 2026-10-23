@@ -169,7 +169,7 @@ public class MedicineService {
         Display.println("Name:            " + medicine.getName());
         Display.println("Batch Number:    " + medicine.getBatchNumber());
         Display.println("Category:        " + medicine.getCategory());
-        Display.println("Unit Price:      " + String.format("%.2f", medicine.getUnitPrice()));
+        Display.println("Unit Price:      " + String.format("P%.2f", medicine.getUnitPrice()));
         Display.println("Stock:           " + medicine.getQuantity());
         Display.println("Min Stock Level: " + medicine.getMinStockLevel());
         Display.println("Expiration Date: " + medicine.getExpirationDate());

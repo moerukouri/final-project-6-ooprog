@@ -70,10 +70,10 @@ public class Validate {
     }
 
     public static int isValidInteger(String integer, String numberName) {
-        isValidString(integer, numberName + "is empty.");
+        isValidString(integer, numberName + " is empty.");
 
         if (!integer.matches(INTEGER_REGEX)) {
-            throw new InvalidInputException(numberName + "is not properly formatted or a negative integer.");
+            throw new InvalidInputException(numberName + " is not properly formatted or a negative integer.");
         }
 
         try {
@@ -134,7 +134,7 @@ public class Validate {
     }
 
     public static String requireText(String value, String field) {
-        isValidString(value, field + "cannot be empty.");
+        isValidString(value, field + " cannot be empty.");
         return value;
     }
 
