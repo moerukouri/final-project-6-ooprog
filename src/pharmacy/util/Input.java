@@ -16,6 +16,25 @@ public class Input {
         return INSTANCE;
     }
 
+    public String readText(String prompt) {
+        boolean isValid = false;
+        String text = null;
+
+        do {
+            try {
+                Display.print(prompt);
+                text = sc.nextLine().trim();
+
+                Validate.isValidString(text, "Text cannot be empty or null.");
+                isValid = true;
+            } catch (InvalidInputException e) {
+               Display.feedback(e.getMessage());
+            }
+        } while (!isValid);
+
+        return text;
+    }
+
     public int readChoice(int min, int max) {
         boolean isValid = false;
         int choice = -1;
@@ -75,13 +94,13 @@ public class Input {
         return username;
     }
 
-    public String readPassword() {
+    public String readPassword(String prompt) {
         boolean isValid = false;
         String password = null;
 
         do {
             try {
-                 Display.print("Input Password: ");
+                 Display.print(prompt);
                 password = sc.nextLine().trim();
 
                 Validate.password(password);
