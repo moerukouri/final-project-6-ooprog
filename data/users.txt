@@ -1,0 +1,2 @@
+U0001|admin|Default Administrator|Admin|Active|admin123
+U0002|staff1|Default Staff|Staff|Active|staff123
