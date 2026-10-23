@@ -66,9 +66,7 @@ public class Input {
             if (answer.equalsIgnoreCase("y")) {
                 output = true;
                 isValid = true;
-            }
-
-            if (answer.equalsIgnoreCase("n")) {
+            } else if (answer.equalsIgnoreCase("n")) {
                 output = false;
                 isValid = true;
             }

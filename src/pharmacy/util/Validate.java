@@ -128,7 +128,7 @@ public class Validate {
     }
 
     public static void isValidString(String string, String errorMessage) {
-        if (string.isBlank() || string.isEmpty()) {
+        if (string == null || string.isEmpty()) {
             throw new InvalidInputException(errorMessage);
         }
 
