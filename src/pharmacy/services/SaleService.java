@@ -140,8 +140,6 @@ public class SaleService {
             } else {
                 Display.feedback("Sale not completed. Your cart was kept. " + "You can add more items or cancel.");
             }
-
-            Display.feedback("Sale not completed. Your items were kept, you can keep editing the transaction.");
         }
 
     Sale sale = new Sale(sales.nextSaleId(), LocalDateTime.now(), user.getUserId(), items);
@@ -282,7 +280,7 @@ public class SaleService {
             if (medicine == null) {
                 throw new InvalidInputException("Medicine not found: " + item.getMedicineId());
             }
-            
+
             int newQuantity = medicine.getQuantity() + direction * item.getQuantity();
             medicine.setQuantity(newQuantity);
             medicines.update(medicine);

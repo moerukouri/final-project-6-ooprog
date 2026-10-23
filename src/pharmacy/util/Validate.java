@@ -128,8 +128,6 @@ public class Validate {
     }
 
     public static void isValidString(String string, String errorMessage) {
-        string = string.trim().strip();
-
         if (string.isBlank() || string.isEmpty()) {
             throw new InvalidInputException(errorMessage);
         }

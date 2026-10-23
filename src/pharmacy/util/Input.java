@@ -72,8 +72,9 @@ public class Input {
                 output = false;
                 isValid = true;
             }
-
-            Display.feedback("Please enter only y or n.");
+            else {
+                Display.feedback("Please enter only y or n.");
+            }
         }
 
         return output;
