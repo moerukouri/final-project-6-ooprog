@@ -1,7 +1,9 @@
 package services;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import model.Medicine;
 import model.User;
 import repository.MedicineRepository;
@@ -21,7 +23,7 @@ public class MedicineService {
         this.input = Input.getInstance();
     }
 
-        public void menu(User user) {
+    public void menu(User user) {
         Validate.authorization(user, Action.ADD_MEDICINE);
 
         boolean running = true;
@@ -59,20 +61,15 @@ public class MedicineService {
         Display.title("SEARCH MEDICINE");
 
         String query = input.readText("Input Medicine Name or Category: ");
-        List<Medicine> matches = new ArrayList<>();
-
-        for (Medicine medicine : medicines.findAll()) {
-            if (medicine.getName().toLowerCase().contains(query.toLowerCase())
-                    || medicine.getCategory().toLowerCase().contains(query.toLowerCase())) {
-                matches.add(medicine);
-            }
-        }
+        String needle = query.toLowerCase();
+        List<Medicine> matches = filter(medicines.findAll(), m -> m.getName().toLowerCase().contains(needle) || m.getCategory().toLowerCase().contains(needle));
 
         if (matches.isEmpty()) {
             Display.feedback("No medicine found for \"" + query + "\".");
-        } else {
-            Table.medicines(matches);
+            return;
         }
+
+        Table.medicines(matches);
     }
 
     private void addMedicine(User user) {
@@ -80,15 +77,7 @@ public class MedicineService {
         Display.title("ADD MEDICINE");
 
         Medicine medicine = new Medicine(
-                medicines.nextMedicineId(),
-                input.readText("Input Batch Number: "),
-                input.readMedicineName(),
-                input.readCategory(),
-                input.readUnitPrice(),
-                input.readQuantity(),
-                input.readMinimumStockLevel(),
-                input.readExpirationDate(),
-                true
+                medicines.nextMedicineId(), input.readText("Input Batch Number: "), input.readMedicineName(), input.readCategory(), input.readUnitPrice(), input.readQuantity(), input.readMinimumStockLevel(), input.readExpirationDate(), true
         );
 
         medicines.add(medicine);
@@ -110,13 +99,7 @@ public class MedicineService {
         showDetails(medicine);
 
         medicine.updateDetails(
-                input.readText("Input Batch Number: "),
-                input.readMedicineName(),
-                input.readCategory(),
-                input.readUnitPrice(),
-                input.readQuantity(),
-                input.readMinimumStockLevel(),
-                input.readExpirationDate()
+                input.readText("Input Batch Number: "), input.readMedicineName(), input.readCategory(), input.readUnitPrice(), input.readQuantity(), input.readMinimumStockLevel(), input.readExpirationDate()
         );
 
         medicines.update(medicine);
@@ -165,28 +148,12 @@ public class MedicineService {
     }
 
     private void showStockAlerts() {
-        List<Medicine> expired = new ArrayList<>();
-        List<Medicine> nearExpiry = new ArrayList<>();
-        List<Medicine> outOfStock = new ArrayList<>();
-        List<Medicine> lowStock = new ArrayList<>();
+        List<Medicine> active = filter(medicines.findAll(), Medicine::isActive);
 
-        for (Medicine medicine : medicines.findAll()) {
-            if (!medicine.isActive()) {
-                continue;
-            }
-
-            if (medicine.isExpired()) {
-                expired.add(medicine);
-            } else if (medicine.isNearExpiry(Medicine.EXPIRY_WINDOW_DAYS)) {
-                nearExpiry.add(medicine);
-            }
-
-            if (medicine.isOutOfStock()) {
-                outOfStock.add(medicine);
-            } else if (medicine.isLowStock()) {
-                lowStock.add(medicine);
-            }
-        }
+        List<Medicine> expired = filter(active, Medicine::isExpired);
+        List<Medicine> nearExpiry = filter(active, m -> !m.isExpired() && m.isNearExpiry(Medicine.EXPIRY_WINDOW_DAYS));
+        List<Medicine> outOfStock = filter(active, Medicine::isOutOfStock);
+        List<Medicine> lowStock = filter(active, m -> !m.isOutOfStock() && m.isLowStock());
 
         Display.title("STOCK AND EXPIRATION ALERTS");
 
@@ -195,34 +162,24 @@ public class MedicineService {
             return;
         }
 
-        if (!expired.isEmpty()) {
-            Display.println("EXPIRED (" + expired.size() + "):");
-            for (Medicine medicine : expired) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ") expired on " + medicine.getExpirationDate());
-            }
-        }
-
-        if (!nearExpiry.isEmpty()) {
-            Display.println("EXPIRING WITHIN " + Medicine.EXPIRY_WINDOW_DAYS + " DAYS (" + nearExpiry.size() + "):");
-            for (Medicine medicine : nearExpiry) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ") expires on " + medicine.getExpirationDate());
-            }
-        }
-
-        if (!outOfStock.isEmpty()) {
-            Display.println("OUT OF STOCK (" + outOfStock.size() + "):");
-            for (Medicine medicine : outOfStock) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ")");
-            }
-        }
-
-        if (!lowStock.isEmpty()) {
-            Display.println("LOW STOCK (" + lowStock.size() + "):");
-            for (Medicine medicine : lowStock) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ") - Stock: " + medicine.getQuantity() + ", Min: " + medicine.getMinStockLevel());
-            }
-        }
+        printSection("EXPIRED", expired, m -> " expired on " + m.getExpirationDate());
+        printSection("EXPIRING WITHIN " + Medicine.EXPIRY_WINDOW_DAYS + " DAYS", nearExpiry, m -> " expires on " + m.getExpirationDate());
+        printSection("OUT OF STOCK", outOfStock, m -> "");
+        printSection("LOW STOCK", lowStock, m -> " - Stock: " + m.getQuantity() + ", Min: " + m.getMinStockLevel());
 
         Display.println();
+    }
+
+    private void printSection(String heading, List<Medicine> list, Function<Medicine, String> detail) {
+        if (list.isEmpty()) {
+            return;
+        }
+
+        Display.println(heading + " (" + list.size() + "):");
+        list.forEach(m -> Display.println("  - " + m.getName() + " (" + m.getMedicineId() + ")" + detail.apply(m)));
+    }
+
+    private List<Medicine> filter(List<Medicine> list, Predicate<Medicine> condition) {
+        return list.stream().filter(condition).collect(Collectors.toList());
     }
 }

@@ -2,9 +2,10 @@ package services;
 
 import exception.InvalidInputException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import model.Medicine;
 import model.Sale;
 import model.User;
@@ -15,6 +16,7 @@ import ui.Display;
 import ui.Table;
 import util.Input;
 import util.Validate;
+
 
 public class ReportService {
     private final MedicineRepository medicines;
@@ -64,8 +66,7 @@ public class ReportService {
         }
 
         Table.sales(daySales);
-        Display.feedback("Summary for " + date + ":\nTotal sales: " + daySales.size()
-                + "\nTotal amount: " + money(sumTotal(daySales)));
+        Display.feedback("Summary for " + date + ":\nTotal sales: " + daySales.size() + "\nTotal amount: " + money(sumTotal(daySales)));
     }
 
     private void salesForPeriod() {
@@ -86,8 +87,7 @@ public class ReportService {
         }
 
         Table.sales(periodSales);
-        Display.feedback("Summary from " + start + " to " + end + ":\nTotal sales: " + periodSales.size()
-                + "\nTotal amount: " + money(sumTotal(periodSales)));
+        Display.feedback("Summary from " + start + " to " + end + ":\nTotal sales: " + periodSales.size() + "\nTotal amount: " + money(sumTotal(periodSales)));
     }
 
     private void inventoryReport() {
@@ -99,97 +99,38 @@ public class ReportService {
             return;
         }
 
-        int inStock = 0;
-        int lowStock = 0;
-        int outOfStock = 0;
-        int expired = 0;
-        double inventoryValue = 0;
+        List<Medicine> active = filter(all, Medicine::isActive);
 
-        for (Medicine medicine : all) {
-            inventoryValue += medicine.getUnitPrice() * medicine.getQuantity();
+        long expired = active.stream().filter(Medicine::isExpired).count();
+        long outOfStock = active.stream().filter(m -> !m.isExpired() && m.isOutOfStock()).count();
+        long lowStock = active.stream().filter(m -> !m.isExpired() && !m.isOutOfStock() && m.isLowStock()).count();
+        long inStock = active.size() - expired - outOfStock - lowStock;
 
-            if (!medicine.isActive()) {
-                continue;
-            }
+        double inventoryValue = all.stream().mapToDouble(m -> m.getUnitPrice() * m.getQuantity()).sum();
 
-            if (medicine.isExpired()) {
-                expired++;
-            } else if (medicine.isOutOfStock()) {
-                outOfStock++;
-            } else if (medicine.isLowStock()) {
-                lowStock++;
-            } else {
-                inStock++;
-            }
-        }
-
-        Display.feedback("Inventory summary:\nTotal medicines: " + all.size()
-                + "\nIn stock: " + inStock
-                + "\nLow stock: " + lowStock
-                + "\nOut of stock: " + outOfStock
-                + "\nExpired: " + expired
-                + "\nTotal inventory value: " + money(inventoryValue));
+        Display.feedback("Inventory summary:\nTotal medicines: " + all.size() + "\nIn stock: " + inStock + "\nLow stock: " + lowStock + "\nOut of stock: " + outOfStock + "\nExpired: " + expired + "\nTotal inventory value: " + money(inventoryValue));
         Table.medicines(all);
     }
 
     private void stockAlerts() {
         Display.title("LOW STOCK AND EXPIRED MEDICINES");
 
-        List<Medicine> expired = new ArrayList<>();
-        List<Medicine> nearExpiry = new ArrayList<>();
-        List<Medicine> lowStock = new ArrayList<>();
-        List<Medicine> outOfStock = new ArrayList<>();
+        List<Medicine> active = filter(medicines.findAll(), Medicine::isActive);
 
-        for (Medicine medicine : medicines.findAll()) {
-            if (!medicine.isActive()) {
-                continue;
-            }
-
-            if (medicine.isExpired()) {
-                expired.add(medicine);
-            } else if (medicine.isNearExpiry(Medicine.EXPIRY_WINDOW_DAYS)) {
-                nearExpiry.add(medicine);
-            }
-
-            if (medicine.isOutOfStock()) {
-                outOfStock.add(medicine);
-            } else if (medicine.isLowStock()) {
-                lowStock.add(medicine);
-            }
-        }
+        List<Medicine> expired = filter(active, Medicine::isExpired);
+        List<Medicine> nearExpiry = filter(active, m -> !m.isExpired() && m.isNearExpiry(Medicine.EXPIRY_WINDOW_DAYS));
+        List<Medicine> outOfStock = filter(active, Medicine::isOutOfStock);
+        List<Medicine> lowStock = filter(active, m -> !m.isOutOfStock() && m.isLowStock());
 
         if (expired.isEmpty() && nearExpiry.isEmpty() && lowStock.isEmpty() && outOfStock.isEmpty()) {
             Display.feedback("No low-stock or expired medicines.");
             return;
         }
 
-        if (!expired.isEmpty()) {
-            Display.println("EXPIRED (" + expired.size() + "):");
-            for (Medicine medicine : expired) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ") expired on " + medicine.getExpirationDate());
-            }
-        }
-
-        if (!nearExpiry.isEmpty()) {
-            Display.println("EXPIRING WITHIN " + Medicine.EXPIRY_WINDOW_DAYS + " DAYS (" + nearExpiry.size() + "):");
-            for (Medicine medicine : nearExpiry) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ") expires on " + medicine.getExpirationDate());
-            }
-        }
-
-        if (!outOfStock.isEmpty()) {
-            Display.println("OUT OF STOCK (" + outOfStock.size() + "):");
-            for (Medicine medicine : outOfStock) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ")");
-            }
-        }
-
-        if (!lowStock.isEmpty()) {
-            Display.println("LOW STOCK (" + lowStock.size() + "):");
-            for (Medicine medicine : lowStock) {
-                Display.println("  - " + medicine.getName() + " (" + medicine.getMedicineId() + ") - Stock: " + medicine.getQuantity() + ", Min: " + medicine.getMinStockLevel());
-            }
-        }
+        printSection("EXPIRED", expired, m -> " expired on " + m.getExpirationDate());
+        printSection("EXPIRING WITHIN " + Medicine.EXPIRY_WINDOW_DAYS + " DAYS", nearExpiry, m -> " expires on " + m.getExpirationDate());
+        printSection("OUT OF STOCK", outOfStock, m -> "");
+        printSection("LOW STOCK", lowStock, m -> " - Stock: " + m.getQuantity() + ", Min: " + m.getMinStockLevel());
 
         Display.println();
     }
@@ -207,27 +148,41 @@ public class ReportService {
         Display.feedback("Total transactions: " + all.size() + "\nTotal amount: " + money(sumTotal(all)));
     }
 
-    private LocalDate readDate(String prompt) {
-        while (true) {
-            String raw = input.readText(prompt);
+    private void printSection(String heading, List<Medicine> list, Function<Medicine, String> detail) {
+        if (list.isEmpty()) {
+            return;
+        }
 
-            try {
-                Validate.date(raw);
-                return LocalDate.parse(raw);
-            } catch (InvalidInputException e) {
-                Display.feedback(e.getMessage());
-            }
+        Display.println(heading + " (" + list.size() + "):");
+        list.forEach(m -> Display.println("  - " + m.getName() + " (" + m.getMedicineId() + ")" + detail.apply(m)));
+    }
+
+    private List<Medicine> filter(List<Medicine> list, java.util.function.Predicate<Medicine> condition) {
+        return list.stream().filter(condition).collect(Collectors.toList());
+    }
+
+    private LocalDate readDate(String prompt) {
+        LocalDate date = null;
+
+        while (date == null) {
+            date = parseDate(input.readText(prompt));
+        }
+
+        return date;
+    }
+
+    private LocalDate parseDate(String raw) {
+        try {
+            Validate.date(raw);
+            return LocalDate.parse(raw);
+        } catch (InvalidInputException e) {
+            Display.feedback(e.getMessage());
+            return null;
         }
     }
 
     private double sumTotal(List<Sale> salesList) {
-        double total = 0;
-
-        for (Sale sale : salesList) {
-            total += sale.getTotalAmount();
-        }
-
-        return total;
+        return salesList.stream().mapToDouble(Sale::getTotalAmount).sum();
     }
 
     private static String money(double amount) {

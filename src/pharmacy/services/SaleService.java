@@ -1,11 +1,13 @@
 package services;
 
+import exception.ExpiredMedicineException;
+import exception.InsufficientStockException;
 import exception.InvalidInputException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import java.util.stream.Collectors;
 import model.Medicine;
 import model.Sale;
 import model.SaleItem;
@@ -71,13 +73,9 @@ public class SaleService {
     public void viewOwnSales(User user) {
         Validate.authorization(user, Action.VIEW_OWN_SALES);
 
-        List<Sale> own = new ArrayList<>();
-
-        for (Sale sale : sales.findAll()) {
-            if (sale.getCashierId().equals(user.getUserId())) {
-                own.add(sale);
-            }
-        }
+        List<Sale> own = sales.findAll().stream()
+                .filter(sale -> sale.getCashierId().equals(user.getUserId()))
+                .collect(Collectors.toList());
 
         if (own.isEmpty()) {
             Display.feedback("You have no sales recorded yet.");
@@ -106,46 +104,7 @@ public class SaleService {
     public void recordTransaction(User user) {
         Validate.authorization(user, Action.RECORD_TRANSACTION);
 
-        ArrayList<SaleItem> items = new ArrayList<>();
-
-        while (true) {
-            Display.title("RECORD TRANSACTION");
-            printCart(items);
-            Display.println("1. Add Item");
-            Display.println("0. Finish Transaction");
-            int choice = input.readChoice(0, 1);
-
-            if (choice == 0) {
-                break;
-            }
-
-            String query = input.readText("Input Medicine Name or ID: ");
-            Medicine medicine = findMedicine(query);
-
-            if (medicine == null) {
-                Display.feedback("Medicine not found.");
-                continue;
-            }
-
-            if (medicine.isExpired()) {
-                Display.feedback("Cannot sell " + medicine.getName() + ". It expired on " + medicine.getExpirationDate() + ".");
-                continue;
-            }
-
-            int available = medicine.getQuantity() - quantityAlreadyAdded(items, medicine.getMedicineId());
-            if (available <= 0) {
-                Display.feedback("Insufficient stock for " + medicine.getName() + ". Available: " + available + ".");
-                continue;
-            }
-
-            int quantity = readQuantity();
-            if (quantity > available) {
-                Display.feedback("Insufficient stock for " + medicine.getName() + ". Available: " + available + ".");
-                continue;
-            }
-
-            items.add(new SaleItem(medicine.getMedicineId(), medicine.getName(), medicine.getUnitPrice(), quantity));
-        }
+        ArrayList<SaleItem> items = collectItems();
 
         if (items.isEmpty()) {
             Display.feedback("No items added. Transaction cancelled.");
@@ -163,15 +122,7 @@ public class SaleService {
 
         Sale sale = new Sale(sales.nextSaleId(), LocalDateTime.now(), user.getUserId(), items);
 
-        for (SaleItem item : sale.getItems()) {
-            Medicine medicine = medicines.findByMedicineId(item.getMedicineId()).orElse(null);
-
-            if (medicine != null) {
-                medicine.setQuantity(medicine.getQuantity() - item.getQuantity());
-                medicines.update(medicine);
-            }
-        }
-
+        adjustStock(sale, -1);
         sales.add(sale);
         printSale(sale);
         Display.feedback("Sale recorded successfully.");
@@ -197,46 +148,115 @@ public class SaleService {
             return;
         }
 
-        for (SaleItem item : sale.getItems()) {
-            Medicine medicine = medicines.findByMedicineId(item.getMedicineId()).orElse(null);
-
-            if (medicine != null) {
-                medicine.setQuantity(medicine.getQuantity() + item.getQuantity());
-                medicines.update(medicine);
-            }
-        }
+        adjustStock(sale, 1);
 
         audit.log("Sale " + sale.getSaleId() + " voided by " + user.getUserId() + " (" + user.getUsername() + "). Stock restored.");
         Display.feedback("Sale " + sale.getSaleId() + " has been voided and its stock was restored.\nAn audit record was saved.");
     }
 
-    private int readQuantity() {
-        while (true) {
-            String raw = input.readText("Input Quantity: ");
+    private ArrayList<SaleItem> collectItems() {
+        ArrayList<SaleItem> items = new ArrayList<>();
+        boolean adding = true;
 
-            try {
-                return Validate.isValidInteger(raw, "Quantity");
-            } catch (InvalidInputException e) {
-                Display.feedback(e.getMessage());
+        while (adding) {
+            Display.title("RECORD TRANSACTION");
+            printCart(items);
+            Display.println("1. Add Item");
+            Display.println("0. Finish Transaction");
+
+            adding = input.readChoice(0, 1) == 1;
+            if (adding) {
+                tryAddItem(items);
             }
+        }
+
+        return items;
+    }
+
+    private void tryAddItem(ArrayList<SaleItem> items) {
+        String query = input.readText("Input Medicine Name or ID: ");
+        Medicine medicine = findMedicine(query);
+
+        if (medicine == null) {
+            Display.feedback("Medicine not found.");
+            return;
+        }
+
+        try {
+            checkNotExpired(medicine);
+        } catch (ExpiredMedicineException e) {
+            Display.feedback(e.getMessage());
+            return;
+        }
+
+        int available = medicine.getQuantity() - quantityAlreadyAdded(items, medicine.getMedicineId());
+        if (available <= 0) {
+            Display.feedback("Insufficient stock for " + medicine.getName() + ". Available: " + available + ".");
+            return;
+        }
+
+        int quantity = readQuantity();
+        try {
+            checkStock(medicine, quantity, available);
+        } catch (InsufficientStockException e) {
+            Display.feedback(e.getMessage());
+            return;
+        }
+
+        items.add(new SaleItem(medicine.getMedicineId(), medicine.getName(), medicine.getUnitPrice(), quantity));
+    }
+
+    private void adjustStock(Sale sale, int direction) {
+        for (SaleItem item : sale.getItems()) {
+            medicines.findByMedicineId(item.getMedicineId()).ifPresent(medicine -> {
+                medicine.setQuantity(medicine.getQuantity() + direction * item.getQuantity());
+                medicines.update(medicine);
+            });
         }
     }
 
-    private void printCart(ArrayList<SaleItem> items) {
-        if (items.isEmpty()) {
-            Display.println("No items added yet.");
-        } else {
-            double total = 0;
+    private void checkStock(Medicine medicine, int requested, int available) {
+        if (requested > available) {
+            throw new InsufficientStockException(medicine.getName(), requested, available);
+        }
+    }
 
-            for (SaleItem item : items) {
-                total += item.getSubtotal();
-                Display.println("- " + item.getMedicineName() + " (" + item.getMedicineId() + ") x"
-                        + item.getQuantity() + "  Subtotal: " + money(item.getSubtotal()));
-            }
+    private void checkNotExpired(Medicine medicine) {
+        if (medicine.isExpired()) {
+            throw new ExpiredMedicineException(medicine.getName(), medicine.getExpirationDate());
+        }
+    }
 
-            Display.println("Current Total: " + money(total));
+    private int readQuantity() {
+        Integer quantity = null;
+
+        while (quantity == null) {
+            quantity = parseQuantity(input.readText("Input Quantity: "));
         }
 
+        return quantity;
+    }
+
+    private Integer parseQuantity(String raw) {
+        try {
+            return Validate.isValidInteger(raw, "Quantity");
+        } catch (InvalidInputException e) {
+            Display.feedback(e.getMessage());
+            return null;
+        }
+    }
+
+    private void printCart(List<SaleItem> items) {
+        if (items.isEmpty()) {
+            Display.println("No items added yet.");
+            Display.println();
+            return;
+        }
+
+        items.forEach(item -> Display.println("- " + item.getMedicineName() + " (" + item.getMedicineId() + ") x" + item.getQuantity() + "  Subtotal: " + money(item.getSubtotal())));
+
+        double total = items.stream().mapToDouble(SaleItem::getSubtotal).sum();
+        Display.println("Current Total: " + money(total));
         Display.println();
     }
 
@@ -247,8 +267,7 @@ public class SaleService {
         Display.println();
 
         for (SaleItem item : sale.getItems()) {
-            Display.println(item.getMedicineName() + " (" + item.getMedicineId() + ") x"
-                    + item.getQuantity() + "  " + money(item.getSubtotal()));
+            Display.println(item.getMedicineName() + " (" + item.getMedicineId() + ") x" + item.getQuantity() + "  " + money(item.getSubtotal()));
         }
 
         Display.println();
@@ -257,29 +276,14 @@ public class SaleService {
     }
 
     private Medicine findMedicine(String query) {
-        for (Medicine medicine : medicines.findAll()) {
-            if (medicine.getMedicineId().equalsIgnoreCase(query)
-                    || medicine.getName().equalsIgnoreCase(query)) {
-                return medicine;
-            }
-        }
-
-        return null;
+        return medicines.findAll().stream().filter(m -> m.getMedicineId().equalsIgnoreCase(query) || m.getName().equalsIgnoreCase(query)).findFirst().orElse(null);
     }
 
-    private int quantityAlreadyAdded(ArrayList<SaleItem> items, String medicineId) {
-        int total = 0;
-
-        for (SaleItem item : items) {
-            if (item.getMedicineId().equals(medicineId)) {
-                total += item.getQuantity();
-            }
-        }
-
-        return total;
+    private int quantityAlreadyAdded(List<SaleItem> items, String medicineId) {
+        return items.stream().filter(item -> item.getMedicineId().equals(medicineId)).mapToInt(SaleItem::getQuantity).sum();
     }
 
     private static String money(double amount) {
-        return String.format(Locale.ROOT, "%.2f", amount);
+        return String.format("P%.2f", amount);
     }
 }
