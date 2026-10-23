@@ -22,6 +22,7 @@ public class Validate {
     private Validate() {} // Prevents Instantiation
 
     private static final String INTEGER_REGEX = "^[1-9][0-9]*$";
+    private static final String NON_NEGATIVE_INTEGER_REGEX = "^(0|[1-9][0-9]*)$";
     private static final String DOUBLE_REGEX = "(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,2})?";
     private static final String PASSWORD_REGEX = "^[a-zA-Z0-9]{8,}$";
     
@@ -41,9 +42,9 @@ public class Validate {
     }
 
     public static void choice(String rawInput, int min, int max) {
-        int choice = isValidInteger(rawInput, "Choice");
+        int choice = isValidNonNegativeInteger(rawInput, "Choice");
 
-        if (!(choice >= min) && !(choice <= max)) {
+        if (!(choice >= min) || !(choice <= max)) {
             throw new InvalidInputException("The number is not within the range of choices.");
         }
     }
@@ -99,6 +100,20 @@ public class Validate {
 
         if (!integer.matches(INTEGER_REGEX)) {
             throw new InvalidInputException(numberName + "is not properly formatted or a negative integer.");
+        }
+
+        try {
+            return Integer.parseInt(integer);
+        } catch (NumberFormatException e) {
+            throw new InvalidInputException(numberName + " is not an integer.");
+        }
+    }
+
+    public static int isValidNonNegativeInteger(String integer, String numberName) {
+        isValidString(integer, numberName + " is empty.");
+
+        if (!integer.matches(NON_NEGATIVE_INTEGER_REGEX)) {
+            throw new InvalidInputException(numberName + " is not properly formatted or is a negative integer.");
         }
 
         try {

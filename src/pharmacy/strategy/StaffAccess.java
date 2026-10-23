@@ -9,6 +9,7 @@ public class StaffAccess implements AccessStrategy {
             Action.VIEW_ALL_MEDICINE,
             Action.SEARCH_OWN_SALE,
             Action.VIEW_OWN_SALES,
+            Action.CHANGE_OWN_PASSWORD,
             Action.LOGOUT
         );
     

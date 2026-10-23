@@ -27,7 +27,7 @@ public abstract class User {
     }
 
     public String getFullName() {
-        return username;
+        return fullName;
     }
 
     public String getPassword() {

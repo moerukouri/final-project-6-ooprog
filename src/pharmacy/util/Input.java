@@ -218,7 +218,7 @@ public class Input {
                Display.print("Input Initial Quantity: ");
                 String rawInput = sc.nextLine().trim();
 
-                Validate.isValidInteger(rawInput, "Quantity");
+                Validate.isValidNonNegativeInteger(rawInput, "Quantity");
                 quantity = Integer.parseInt(rawInput);
                 
                 isValid = true;
@@ -239,7 +239,7 @@ public class Input {
                Display.print("Input Minimum Stock for Medicine: ");
                 String rawInput = sc.nextLine().trim();
 
-                Validate.isValidInteger(rawInput, "Minimum Stock Level");
+                Validate.isValidNonNegativeInteger(rawInput, "Minimum Stock Level");
                 minStockLevel = Integer.parseInt(rawInput);
                 isValid = true;
             } catch (InvalidInputException e) {
