@@ -4,6 +4,7 @@ import io.FileCreator;
 import io.FilePath;
 import model.Sale;
 import model.SaleItem;
+import ui.Display;
 import io.FileHandler;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,9 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-
 import exception.FileStorageException;
-import exception.IllegalSaleException;
+import exception.PharmacyException;
 
 public class SaleRepository {
     private static final String SALES_PATH = FilePath.SALES_PATH.getFilePath();
@@ -50,17 +50,17 @@ public class SaleRepository {
                     
                     case ITEM_TYPE -> {
                         if (current == null ) {
-                            throw new IllegalSaleException("Item found without a sale");
+                            throw new PharmacyException("Item found without a sale");
                         }
 
                         SaleItem item = parseItem(f, current);
                         current.addItem(item);
                     }
                     
-                    default -> throw new IllegalSaleException(f[0], line);
+                    default -> throw new FileStorageException(line);
                 }
-            } catch (FileStorageException | DateTimeParseException | IllegalSaleException e) { 
-                System.err.println("[Warn] Skipping malformed sale record: " + line);
+            } catch (FileStorageException | DateTimeParseException e) { 
+                Display.println("[Warn] Skipping malformed sale record: " + line);
                 current = null;
             }
         }
@@ -125,7 +125,7 @@ public class SaleRepository {
         try {
             return Integer.parseInt(id.substring(1));
         } catch (NumberFormatException e) {
-            throw new IllegalSaleException();
+            throw new PharmacyException("Sale ID is Invalid.");
         }
     }
 
@@ -143,7 +143,7 @@ public class SaleRepository {
         }
         
         if (current == null || !current.getSaleId().equals(f[1])) {
-            throw new IllegalSaleException("ITEM line without a matching SALE line. ");
+            throw new PharmacyException("ITEM line without a matching SALE line. ");
         }
        
         return new SaleItem(f[2], f[3], Double.parseDouble(f[4]), Integer.parseInt(f[5]));

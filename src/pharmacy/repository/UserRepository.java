@@ -1,10 +1,12 @@
 package repository;
 
 import exception.FileStorageException;
-import exception.IllegalUserException;
+import exception.PharmacyException;
 import io.FileCreator;
 import io.FileHandler;
 import io.FilePath;
+import io.Operation;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +15,7 @@ import model.Admin;
 import model.Role;
 import model.Staff;
 import model.User;
+import util.Validate;
 
 public class UserRepository {
     private static final int FIELD_COUNT = 6;
@@ -71,9 +74,10 @@ public class UserRepository {
 
     public void replace(String userId, User replacement) {
         String oldLine = FileHandler.retrieveLine(userId, 0, USERS_PATH);
+        Validate.isObjectNull(oldLine, "Old Line");
         
         if  (oldLine == null || !FileHandler.update(oldLine, serialize(replacement), USERS_PATH)){
-            throw new IllegalUserException(userId);
+            throw new FileStorageException(Operation.WRITE.getOperation(), USERS_PATH);
         }
     }
 
@@ -81,7 +85,7 @@ public class UserRepository {
         try {
             return Integer.parseInt(id.substring(1));
         } catch (NumberFormatException e) {
-            throw new IllegalUserException();
+            throw new PharmacyException("User ID is Invalid.");
         }
     }
 
