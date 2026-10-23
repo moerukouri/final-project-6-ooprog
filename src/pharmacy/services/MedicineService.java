@@ -29,7 +29,7 @@ public class MedicineService {
         boolean running = true;
         while (running) {
             new AdminMenu().manageMedicine();
-            int choice = input.readChoice(0, 5);
+            int choice = input.readChoice(0, 6);
 
             switch (choice) {
                 case 1 -> viewAll(user);
@@ -37,6 +37,7 @@ public class MedicineService {
                 case 3 -> updateMedicine(user);
                 case 4 -> deleteMedicine(user);
                 case 5 -> search(user);
+                case 6 -> changeStatus(user);
                 case 0 -> running = false;
             }
         }
@@ -128,6 +129,34 @@ public class MedicineService {
 
         medicines.removeById(id);
         Display.feedback("Medicine " + id + " has been deleted.");
+    }
+
+    private void changeStatus(User user) {
+        Validate.authorization(user, Action.UPDATE_MEDICINE);
+        Display.title("ACTIVATE / DEACTIVATE MEDICINE");
+
+        String id = input.readText("Input Medicine ID: ");
+        Medicine medicine = findByMedicineId(id);
+
+        if (medicine == null) {
+            Display.feedback("Medicine ID not found.");
+            return;
+        }
+
+        showDetails(medicine);
+
+        String verb = medicine.isActive() ? "deactivate" : "activate";
+        String confirm = input.readText("Are you sure you want to " + verb + " this medicine? (y/n): ");
+        if (!confirm.equalsIgnoreCase("y")) {
+            Display.feedback("Cancelled. No changes were made.");
+            return;
+        }
+
+        boolean activating = !medicine.isActive();
+        medicine.setActive(activating);
+        medicines.update(medicine);
+
+        Display.feedback("Medicine " + id + " is now " + (activating ? "active" : "inactive") + ".");
     }
 
     private Medicine findByMedicineId(String id) {

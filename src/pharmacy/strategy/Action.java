@@ -8,6 +8,7 @@ public enum Action {
     SEARCH_OWN_SALE("Search Own Sale"),
     VIEW_OWN_SALES("View Own Sales"),
     VIEW_ALL_SALES("View All Sales"),
+    VOID_SALE("Void Sale"),
     GENERATE_REPORTS("Generate Report"),
     VIEW_ALL_MEDICINE("View All Medicine"),
     ADD_MEDICINE("Add Medicine"),

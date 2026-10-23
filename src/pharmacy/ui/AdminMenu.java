@@ -34,6 +34,7 @@ public class AdminMenu implements MenuStrategy {
         Display.println("3. Update Medicine");
         Display.println("4. Delete Medicine");
         Display.println("5. Search Medicine");
+        Display.println("6. Activate / Deactivate Medicine");
         Display.println("0. Back");
     }
 

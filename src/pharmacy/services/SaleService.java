@@ -44,7 +44,7 @@ public class SaleService {
         boolean running = true;
         while (running) {
             new AdminMenu().manageSales();
-            int choice = input.readChoice(0, 5);
+            int choice = input.readChoice(0, 6);
 
             switch (choice) {
                 case 1 -> viewAllSales(user);
@@ -52,6 +52,7 @@ public class SaleService {
                 case 3 -> searchSale(user, false);
                 case 4 -> reports.menu(user);
                 case 5 -> recordTransaction(user);
+                case 6 -> voidSale(user);
                 case 0 -> running = false;
             }
         }
@@ -129,7 +130,7 @@ public class SaleService {
     }
 
     public void voidSale(User user) {
-        Validate.authorization(user, Action.VIEW_ALL_SALES);
+        Validate.authorization(user, Action.VOID_SALE);
 
         Display.title("VOID SALE");
         String id = input.readText("Input Sale ID: ");
@@ -142,12 +143,18 @@ public class SaleService {
 
         printSale(sale);
 
+        if (sale.isVoided()) {
+            Display.feedback("Sale " + sale.getSaleId() + " has already been voided.");
+            return;
+        }
+
         String confirm = input.readText("Void this sale? (y/n): ");
         if (!confirm.equalsIgnoreCase("y")) {
             Display.feedback("Void cancelled.");
             return;
         }
 
+        sales.markVoided(sale.getSaleId());
         adjustStock(sale, 1);
 
         audit.log("Sale " + sale.getSaleId() + " voided by " + user.getUserId() + " (" + user.getUsername() + "). Stock restored.");
@@ -179,6 +186,11 @@ public class SaleService {
 
         if (medicine == null) {
             Display.feedback("Medicine not found.");
+            return;
+        }
+
+        if (!medicine.isActive()) {
+            Display.feedback(medicine.getName() + " is inactive and cannot be sold.");
             return;
         }
 
@@ -264,6 +276,7 @@ public class SaleService {
         Display.title("SALE DETAILS - " + sale.getSaleId());
         Display.println("Date:    " + sale.getTimestamp().format(TIME_FORMAT));
         Display.println("Cashier: " + sale.getCashierId());
+        Display.println("Status:  " + (sale.isVoided() ? "VOIDED" : "Completed"));
         Display.println();
 
         for (SaleItem item : sale.getItems()) {

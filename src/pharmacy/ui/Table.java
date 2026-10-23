@@ -21,9 +21,9 @@ public class Table {
         String[] fields = TableField.MEDICINE.getFields();
         int[] widths = calculateMedicineColumnWidths(medicines, fields);
         
-        printTableHeader(fields, widths, 22);
+        printTableHeader(fields, widths, 25);
         printMedicinesData(medicines, widths);
-        printTableFooter(widths, 22);
+        printTableFooter(widths, 25);
     }
 
     public static void sales(List<Sale> sales) {
@@ -61,8 +61,10 @@ public class Table {
         int unitPriceLength = fields[4].length();
         int stockLength = fields[5].length();
         int expirationLength = fields[6].length();
+        int statusLength = fields[7].length();
 
         for (Medicine medicine : medicines) {
+            statusLength = Math.max(statusLength, medicine.availabilityStatus().getLabel().length());
             idLength = Math.max(idLength, medicine.getMedicineId().length());
             batchNumberLength = Math.max(batchNumberLength, medicine.getBatchNumber().length());
             nameLength = Math.max(nameLength, medicine.getName().length());
@@ -72,7 +74,7 @@ public class Table {
             expirationLength = Math.max(expirationLength, String.valueOf(medicine.getExpirationDate()).length());
         }
 
-        return new int[]{idLength, batchNumberLength, nameLength, categoryLength, unitPriceLength, stockLength, expirationLength};
+        return new int[]{idLength, batchNumberLength, nameLength, categoryLength, unitPriceLength, stockLength, expirationLength, statusLength};
     }
     
     private static int[] calculateSaleColumnWidths(List<Sale> sales, String[] fields) {
@@ -126,6 +128,7 @@ public class Table {
             row.append(String.format(" %-" + widths[4] + "s |", String.valueOf(medicine.getUnitPrice())));
             row.append(String.format(" %-" + widths[5] + "s |", String.valueOf(medicine.getQuantity())));
             row.append(String.format(" %-" + widths[6] + "s |", String.valueOf(medicine.getExpirationDate())));
+            row.append(String.format(" %-" + widths[7] + "s |", medicine.availabilityStatus().getLabel()));
             
             Display.println(row.toString());
         }
