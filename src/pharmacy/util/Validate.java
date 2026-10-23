@@ -130,7 +130,7 @@ public class Validate {
     public static void isValidString(String string, String errorMessage) {
         string = string.trim().strip();
 
-        if (string.isBlank() || string.isEmpty()) {
+        if (string.isBlank() || string.isEmpty() || string.contains("|")) {
             throw new InvalidInputException(errorMessage);
         }
     }
