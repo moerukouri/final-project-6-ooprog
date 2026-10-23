@@ -214,11 +214,37 @@ public class SaleService {
             return;
         }
 
-        sales.markVoided(sale.getSaleId());
-        adjustStock(sale, 1);
+        Map<String, Integer> stockBefore;
 
-        audit.log("Sale " + sale.getSaleId() + " voided by " + user.getUserId() + " (" + user.getUsername() + "). Stock restored.");
-        Display.feedback("Sale " + sale.getSaleId() + " has been voided and its stock was restored.\nAn audit record was saved.");
+        try {
+            stockBefore = captureStockForVoid(sale);
+        } catch (RuntimeException e) {
+            Display.feedback("Cannot void sale: " + e.getMessage());
+            return;
+        }
+        try {
+            adjustStock(sale, 1);
+            sales.markVoided(sale.getSaleId());
+
+        } catch (RuntimeException e) {
+            try {
+                restoreStock(stockBefore);
+                Display.feedback("Void failed. Inventory was rolled back. " + "Reason: " + e.getMessage());
+            } catch (RuntimeException rollbackError) {
+                e.addSuppressed(rollbackError);
+                Display.feedback("CRITICAL: Void failed and inventory rollback " + "was incomplete. Check the medicine and sales files.");
+            }
+            System.err.println("[Error] Unable to void sale: " + e.getMessage());
+            return;
+        }
+
+        try {
+            audit.log("Sale " + sale.getSaleId() + " voided by " + user.getUserId() + " (" + user.getUsername() + "). Stock restored.");
+            Display.feedback("Sale " + sale.getSaleId() + " has been voided and its stock was restored.\n" + "An audit record was saved.");
+        } catch (RuntimeException e) {
+            Display.feedback("Sale was voided and stock was restored, " + "but audit logging failed. Check the audit file.");
+            System.err.println("[Error] Audit logging failed: " + e.getMessage());
+        }
     }
 
     private int collectItems(ArrayList<SaleItem> items) {
@@ -286,6 +312,30 @@ public class SaleService {
             medicines.update(medicine);
         }
     }
+
+    
+    private Map<String, Integer> captureStockForVoid(Sale sale) {
+        Map<String, Integer> originalStock = new LinkedHashMap<>();
+
+        for (SaleItem item : sale.getItems()) {
+            String medicineId = item.getMedicineId();
+
+            if (originalStock.containsKey(medicineId)) {
+                continue;
+            }
+
+            Medicine medicine = medicines.findByMedicineId(medicineId).orElse(null);
+
+            if (medicine == null) {
+                throw new InvalidInputException("Cannot restore missing medicine: " + medicineId);
+            }
+
+            originalStock.put(medicineId, medicine.getQuantity());
+        }
+
+        return originalStock;
+    }
+
 
     private void checkStock(Medicine medicine, int requested, int available) {
         if (requested > available || available <= 0) {
