@@ -4,7 +4,6 @@ import exception.AccessDeniedException;
 import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Base64;
 import model.Admin;
 import model.Medicine;
 import model.PurchaseRequest;
@@ -17,8 +16,6 @@ import strategy.AccessStrategy;
 import strategy.Action;
 
 public class Validate {
-    private static final int SALT_LENGTH_BYTES = 16;
-    private static final int HASH_LENGTH_BYTES = 32;
 
     private Validate() {} // Prevents Instantiation
 
@@ -198,8 +195,7 @@ public class Validate {
         requireText(user.getUserId(), "User ID");
         requireText(user.getUsername(), "Username");
         requireText(user.getFullName(), "Full name");
-        requireText(user.passwordHash(), "Password hash");
-        requireText(user.getSalt(), "Password salt");
+        requireText(user.getPassword(), "Password");
 
         if (user.getStatus() == null) {
             throw new IllegalArgumentException(
@@ -393,7 +389,7 @@ public class Validate {
             "Invalid choice: " + choice
         );
     }
-    //PASSWORDHASHER VALIDATION
+    //PASSWORD VALIDATION
     public static void validatePassword(String password) {
         if (password == null || password.isEmpty()) {
             throw new IllegalArgumentException(
@@ -402,62 +398,6 @@ public class Validate {
         }
     }
 
-    public static void validateSalt(String salt) {
-        if (salt == null || salt.isBlank()) {
-            throw new IllegalArgumentException(
-                "Salt cannot be null or empty."
-            );
-        }
-
-        try {
-            byte[] decoded = Base64.getDecoder().decode(salt);
-
-            if (decoded.length != SALT_LENGTH_BYTES) {
-                throw new IllegalArgumentException(
-                    "Salt must decode to 16 bytes."
-                );
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                "Salt must be valid Base64 containing 16 bytes.", e
-            );
-        }
-    }
-
-    public static void validateStoredHash(String storedHash) {
-        if (storedHash == null || storedHash.isBlank()) {
-            throw new IllegalArgumentException(
-                "Stored password hash cannot be empty."
-            );
-        }
-
-        try {
-            byte[] decoded = Base64.getDecoder().decode(storedHash);
-
-            if (decoded.length != HASH_LENGTH_BYTES) {
-                throw new IllegalArgumentException(
-                    "Password hash must decode to 32 bytes."
-                );
-            }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                "Stored hash must be valid Base64 containing 32 bytes.", e
-            );
-        }
-    }
-
-    public static void validateHashInputs(
-            String password, String salt) {
-        validatePassword(password);
-        validateSalt(salt);
-    }
-
-    public static void validateVerificationInputs(
-            String password, String salt, String storedHash) {
-        validatePassword(password);
-        validateSalt(salt);
-        validateStoredHash(storedHash);
-    }
     //REPOSITORY VALIDATION
     public static void validateUserId(String userId) {
         requireText(userId, "User ID");
@@ -496,8 +436,7 @@ public class Validate {
             );
         }
 
-        validateField(user.passwordHash(), "Password hash");
-        validateField(user.getSalt(), "Salt");
+        validateField(user.getPassword(), "Password");
     }
 
     public static void validateRecord(String line) {
