@@ -1,6 +1,6 @@
 package ui;
 
-import java.util.ArrayList;
+import java.util.List;
 import model.User;
 import model.Medicine;
 import model.Sale;
@@ -8,7 +8,7 @@ import model.Sale;
 public class Table {
     private Table() {} // Prevents Instantiation
     
-    public static void users(ArrayList<User> users) {
+    public static void users(List<User> users) {
         String[] fields = TableField.USERS.getFields();
         int[] widths = calculateUserColumnWidths(users, fields);
         
@@ -17,7 +17,7 @@ public class Table {
         printTableFooter(widths, 16);
     }
 
-    public static void medicines(ArrayList<Medicine> medicines) {
+    public static void medicines(List<Medicine> medicines) {
         String[] fields = TableField.MEDICINE.getFields();
         int[] widths = calculateMedicineColumnWidths(medicines, fields);
         
@@ -26,7 +26,7 @@ public class Table {
         printTableFooter(widths, 22);
     }
 
-    public static void sales(ArrayList<Sale> sales) {
+    public static void sales(List<Sale> sales) {
         String[] fields = TableField.SALES.getFields();
         int[] widths = calculateSaleColumnWidths(sales, fields);
         
@@ -35,7 +35,7 @@ public class Table {
         printTableFooter(widths, 13);
     }
     
-    private static int[] calculateUserColumnWidths(ArrayList<User> users, String[] fields) {
+    private static int[] calculateUserColumnWidths(List<User> users, String[] fields) {
         int idLength = fields[0].length();
         int usernameLength = fields[1].length();
         int fullNameLength = fields[2].length(); 
@@ -53,7 +53,7 @@ public class Table {
         return new int[]{idLength, usernameLength, fullNameLength, roleLength, statusLength};
     }
     
-    private static int[] calculateMedicineColumnWidths(ArrayList<Medicine> medicines, String[] fields) {
+    private static int[] calculateMedicineColumnWidths(List<Medicine> medicines, String[] fields) {
         int idLength = fields[0].length();
         int batchNumberLength = fields[1].length();
         int nameLength = fields[2].length();
@@ -75,7 +75,7 @@ public class Table {
         return new int[]{idLength, batchNumberLength, nameLength, categoryLength, unitPriceLength, stockLength, expirationLength};
     }
     
-    private static int[] calculateSaleColumnWidths(ArrayList<Sale> sales, String[] fields) {
+    private static int[] calculateSaleColumnWidths(List<Sale> sales, String[] fields) {
         int idLength = fields[0].length();
         int timestampLength = fields[1].length();
         int cashierIDLength = fields[2].length();
@@ -101,7 +101,7 @@ public class Table {
         return total;
     }
 
-    private static void printUsersData(ArrayList<User> users, int[] widths) {
+    private static void printUsersData(List<User> users, int[] widths) {
         for (User user : users) {
             StringBuilder row = new StringBuilder("|");
            
@@ -115,7 +115,7 @@ public class Table {
         }
     }
     
-    private static void printMedicinesData(ArrayList<Medicine> medicines, int[] widths) {
+    private static void printMedicinesData(List<Medicine> medicines, int[] widths) {
         for (Medicine medicine : medicines) {
             StringBuilder row = new StringBuilder("|");
             
@@ -131,7 +131,7 @@ public class Table {
         }
     }
     
-    private static void printSalesData(ArrayList<Sale> sales, int[] widths) {
+    private static void printSalesData(List<Sale> sales, int[] widths) {
         for (Sale sale : sales) {
             StringBuilder row = new StringBuilder("|");
             
