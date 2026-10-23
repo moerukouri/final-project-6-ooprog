@@ -23,7 +23,6 @@ public class AdminMenu implements MenuStrategy {
         Display.println("3. Update User");
         Display.println("4. Delete User");
         Display.println("5. Search User");
-        Display.println("6. Update My Account");
         Display.println("0. Back");
     }
 

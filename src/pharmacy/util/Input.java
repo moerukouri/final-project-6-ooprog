@@ -4,14 +4,51 @@ import java.time.LocalDate;
 import java.util.Scanner;
 import ui.Display;
 
-public class Input {
-    private Input() {} // Prevents Instantiation
-    
-    private Input INSTANCE = new Input();
+public class Input {    
+    private static final Input INSTANCE = new Input();
     private final Scanner sc = new Scanner(System.in);
 
-    public Input getInstance() {
-        return this.INSTANCE;
+    private Input() {} // Prevents Instantiation
+
+    public static Input getInstance() {
+        return INSTANCE;
+    }
+
+    public int readChoice(int min, int max) {
+        boolean isValid = false;
+        int choice = min - 1;
+
+        do {
+            Display.print("Enter your choice: ");
+            String raw = sc.nextLine().trim();
+
+            try {
+                choice = Integer.parseInt(raw);
+                isValid = choice >= min && choice <= max;
+                if (!isValid) {
+                    Display.feedback("Invalid choice. Please enter a number from " + min + " to " + max + ".");
+                }
+            } catch (NumberFormatException e) {
+                Display.feedback("Invalid input. Please enter a number.");
+            }
+        } while (!isValid);
+
+        return choice;
+    }
+
+    public String readText(String prompt) {
+        boolean isValid = false;
+        String value = null;
+
+        do { 
+            Display.print(prompt);
+            value = sc.nextLine().trim();
+            if (value.isBlank() || value.isEmpty()){
+                Display.feedback("This field cannot be empty.");
+            }
+        } while (!isValid);
+
+        return value;
     }
 
     public String readId() {
@@ -34,10 +71,8 @@ public class Input {
         String username = null;
 
         do {
-            Display.print("Input Username: ");
-            username = sc.nextLine().trim();
-
-            // Validator here
+            username = readText("Input Username: ");
+            Validate.validateUsername(username);
             isValid = true;
         } while (!isValid);
 
@@ -49,12 +84,22 @@ public class Input {
         String password = null;
 
         do {
-            Display.print("Input Password: ");
-            password = sc.nextLine().trim();
-
-            // Validator here
+            password = readText("Input Password: ");
+            Validate.validatePassword(password);
             isValid = true;
         } while (!isValid);
+
+        return password;
+    }
+
+    public String readPassword(String prompt) {
+        boolean isValid = false;
+        String password = null;
+        do {
+            password = readText(prompt);
+            Validate.validatePassword(password);
+            isValid = true;
+        } while(!isValid);
 
         return password;
     }

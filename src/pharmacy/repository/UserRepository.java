@@ -85,6 +85,14 @@ public class UserRepository {
         }
     }
 
+    public void removeById(String userId) {
+        String line = FileHandler.retrieveLine(userId, 0, USERS_PATH);
+        
+        if (line == null || !FileHandler.delete(line, USERS_PATH)) {
+            throw new IllegalUserException(userId);
+        }
+    }
+
     private static User parse(String line) {
         String[] f = line.split("\\|", -1);
         
