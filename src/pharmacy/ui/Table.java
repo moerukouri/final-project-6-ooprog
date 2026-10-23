@@ -1,9 +1,9 @@
 package ui;
 
 import java.util.List;
-import model.User;
 import model.Medicine;
 import model.Sale;
+import model.User;
 
 public class Table {
     private Table() {} // Prevents Instantiation
