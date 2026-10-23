@@ -46,6 +46,7 @@ public class AdminMenu implements MenuStrategy {
         Display.println("3. Search Sale");
         Display.println("4. Generate Report");
         Display.println("5. Record Transaction");
+        Display.println("6. Void Sale");
         Display.println("0. Back");
     }
 }
