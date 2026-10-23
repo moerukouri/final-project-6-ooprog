@@ -1,7 +1,6 @@
 package model;
 
 import java.time.LocalDate;
-
 import util.Validate;
 
 public class Medicine {
