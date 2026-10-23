@@ -1,5 +1,7 @@
 package model;
 
+import util.Validate;
+
 public class SaleItem {
     private final String medicineId;
     private final String medicineName;
@@ -8,9 +10,9 @@ public class SaleItem {
 
     public SaleItem(String medicineId, String medicineName, double unitPrice, int quantity) {
         this.medicineId = medicineId;
-        this.medicineName = medicineName;
-        this.unitPrice = unitPrice;
-        this.quantity = quantity;
+        this.medicineName = Validate.requireText(medicineName, "Medicine name");
+        this.unitPrice = Validate.requireNonNegativeFinite(unitPrice, "Unit price");
+        this.quantity = Validate.requirePositiveInt(quantity, "Sale quantity");
     }
 
     public String getMedicineId() {

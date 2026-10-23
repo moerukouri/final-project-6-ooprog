@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import util.Validate;
+
 public class Sale {
     private final String saleId;
     private final LocalDateTime timestamp;
@@ -14,14 +16,17 @@ public class Sale {
     private double storedTotal;
 
     private Sale(String saleId, LocalDateTime timestamp, String cashierId) {
-        this.saleId = saleId;
-        this.timestamp = timestamp;
-        this.cashierId = cashierId;
+        this.saleId = Validate.requireText(saleId, "Sale ID");
+        this.timestamp = Validate.requireNonNull(timestamp, "Sale timestamp");
+        this.cashierId = Validate.requireText(cashierId, "Cashier ID");
         this.totalAmount = 0;
     }
 
     public Sale(String saleId, LocalDateTime timestamp, String cashierId, List<SaleItem> items) {
         this(saleId, timestamp, cashierId);
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("A sale needs at least one item.");
+        }
         for (SaleItem item : items) {
             addItem(item);
         }
@@ -34,7 +39,7 @@ public class Sale {
     }
 
     public final void addItem(SaleItem item) {
-        items.add(item);
+        items.add(Validate.requireNonNull(item, "Sale item"));
         double total = 0;
         for(SaleItem i : items) {
             total += i.getSubtotal();
@@ -43,7 +48,7 @@ public class Sale {
     }
 
     public void setStoredTotal(double storedTotal) {
-        this.storedTotal = storedTotal;
+        this.storedTotal = Validate.requireNonNegativeFinite(storedTotal, "Stored total");
     }
 
     public double getStoredTotal() {
