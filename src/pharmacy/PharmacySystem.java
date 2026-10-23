@@ -6,8 +6,8 @@ import model.User;
 import repository.MedicineRepository;
 import repository.SaleRepository;
 import repository.UserRepository;
-import services.AuthService;
 import services.AuditService;
+import services.AuthService;
 import services.MedicineService;
 import services.ReportService;
 import services.SaleService;
@@ -130,12 +130,11 @@ public class PharmacySystem {
         }
         Admin admin = new Admin(users.nextUserId(), "admin", "Default Administrator", "admin123", AccountStatus.ACTIVE);
         users.add(admin);
-        Display.feedback(
-                "No users found. A default administrator account was created.\n"
-                + "Username: admin\n"
-                + "Password:  admin123\n"
-                + "\n"
-                + "Please log in and change this password."
-        );
+        Display.feedback("""
+                         No users found. A default administrator account was created.
+                         Username: admin
+                         Password:  admin123
+                         
+                         Please log in and change this password.""");
     }
 }
