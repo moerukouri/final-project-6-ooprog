@@ -6,7 +6,9 @@ import exception.InvalidInputException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import model.Medicine;
 import model.Sale;
@@ -142,12 +144,52 @@ public class SaleService {
             Display.feedback("Sale not completed. Your items were kept, you can keep editing the transaction.");
         }
 
-        Sale sale = new Sale(sales.nextSaleId(), LocalDateTime.now(), user.getUserId(), items);
+    Sale sale = new Sale(sales.nextSaleId(), LocalDateTime.now(), user.getUserId(), items);
 
+    Map<String, Integer> stockBefore;
+
+    try {
+        stockBefore = captureAndValidateStock(sale);
+    } catch (RuntimeException e) {
+        Display.feedback("Sale was not recorded: " + e.getMessage());
+        return;
+    }
+
+    try {
         adjustStock(sale, -1);
         sales.add(sale);
-        printSale(sale);
-        Display.feedback("Sale recorded successfully.");
+
+    } catch (RuntimeException e) {
+        boolean rollbackSuccessful = true;
+
+        try {
+            restoreStock(stockBefore);
+        } catch (RuntimeException rollbackError) {
+            rollbackSuccessful = false;
+            e.addSuppressed(rollbackError);
+        }
+
+        try {
+            sales.removeById(sale.getSaleId());
+        } catch (RuntimeException rollbackError) {
+            rollbackSuccessful = false;
+            e.addSuppressed(rollbackError);
+        }
+
+        System.err.println("[Error] Unable to record sale: " + e.getMessage());
+
+        if (rollbackSuccessful) {
+            Display.feedback("Sale failed. Inventory changes were rolled back.");
+        } else {
+            Display.feedback("ERROR: Sale failed and rollback was incomplete. " + "Check the medicine and sales files.");
+        }
+
+        return;
+    }
+
+    printSale(sale);
+    Display.feedback("Sale recorded successfully.");
+
     }
 
     public void voidSale(User user) {
@@ -235,10 +277,15 @@ public class SaleService {
 
     private void adjustStock(Sale sale, int direction) {
         for (SaleItem item : sale.getItems()) {
-            medicines.findByMedicineId(item.getMedicineId()).ifPresent(medicine -> {
-                medicine.setQuantity(medicine.getQuantity() + direction * item.getQuantity());
-                medicines.update(medicine);
-            });
+            Medicine medicine = medicines.findByMedicineId(item.getMedicineId()).orElse(null);
+
+            if (medicine == null) {
+                throw new InvalidInputException("Medicine not found: " + item.getMedicineId());
+            }
+            
+            int newQuantity = medicine.getQuantity() + direction * item.getQuantity();
+            medicine.setQuantity(newQuantity);
+            medicines.update(medicine);
         }
     }
 
@@ -313,5 +360,44 @@ public class SaleService {
 
     private static String money(double amount) {
         return String.format("P%.2f", amount);
+    }
+
+    private Map<String, Integer> captureAndValidateStock(Sale sale) {
+        Map<String, Integer> requested = new LinkedHashMap<>();
+        Map<String, Integer> originalStock = new LinkedHashMap<>();
+
+        for (SaleItem item : sale.getItems()) {
+            requested.merge(item.getMedicineId(), item.getQuantity(), Integer::sum);
+        }
+
+        for (Map.Entry<String, Integer> entry : requested.entrySet()) {
+            Medicine medicine = medicines.findByMedicineId(entry.getKey()).orElse(null);
+
+            if (medicine == null) {
+                throw new InvalidInputException("Medicine not found: " + entry.getKey());
+            }
+
+            if (medicine.getQuantity() < entry.getValue()) {
+                throw new InsufficientStockException(medicine.getName(), entry.getValue(), medicine.getQuantity());
+            }
+
+            originalStock.put(medicine.getMedicineId(), medicine.getQuantity()
+            );
+        }
+
+        return originalStock;
+    }
+
+    private void restoreStock(Map<String, Integer> originalStock) {
+        for (Map.Entry<String, Integer> entry : originalStock.entrySet()) {
+            Medicine medicine = medicines.findByMedicineId(entry.getKey()).orElse(null);
+
+            if (medicine == null) {
+                throw new InvalidInputException("Cannot restore missing medicine: " + entry.getKey());
+            }
+
+            medicine.setQuantity(entry.getValue());
+            medicines.update(medicine);
+        }
     }
 }

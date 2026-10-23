@@ -35,14 +35,10 @@ public class SaleRepository {
         FileCreator.getInstance().createSalesFile();
     }
 
-    /** Completed sales only. Voided sales are excluded so lists and reports stay accurate. */
     public List<Sale> findAll() {
-        return loadAll().stream()
-                .filter(sale -> !sale.isVoided())
-                .collect(Collectors.toList());
+        return loadAll().stream().filter(sale -> !sale.isVoided()).collect(Collectors.toList());
     }
 
-    /** Every sale in the file, including voided ones. */
     private List<Sale> loadAll() {
         List<Sale> sales = new ArrayList<>();
         Sale current = null;
@@ -60,16 +56,13 @@ public class SaleRepository {
                         current = parseSale(f);
                         sales.add(current);
                     }
-                    
                     case ITEM_TYPE -> {
                         if (current == null ) {
                             throw new PharmacyException("Item found without a sale");
                         }
-
                         SaleItem item = parseItem(f, current);
                         current.addItem(item);
                     }
-                    
                     default -> throw new FileStorageException(line);
                 }
             } catch (FileStorageException | DateTimeParseException e) { 
@@ -77,8 +70,6 @@ public class SaleRepository {
                 current = null;
             }
         }
-
-        // IDK IF NEED EXCEPTION OR NOT
         for (Sale sale : sales) {
             if (Math.abs(sale.getStoredTotal() - sale.getTotalAmount()) > TOTAL_TOLERANCE) {
                 System.err.println("[Warn] Sale " + sale.getSaleId() + ": stored total " + money(sale.getStoredTotal()) + " differs from computed total " + money(sale.getTotalAmount()) + "; using computed value.");
@@ -127,20 +118,41 @@ public class SaleRepository {
     }
 
     public void add(Sale sale) {
-        FileHandler.write(serialize(sale), SALES_PATH, true);
-        
-        for (SaleItem item : sale.getItems()){
-            FileHandler.write(serialize(sale.getSaleId(), item), SALES_PATH, true);
+        List<String> records = new ArrayList<>();
+
+        records.add(serialize(sale));
+
+        for (SaleItem item : sale.getItems()) {
+            records.add(serialize(sale.getSaleId(), item));
+        }
+
+        FileHandler.write(
+            String.join(System.lineSeparator(), records),
+            SALES_PATH,
+            true
+        );
+    }
+
+    public void removeById(String saleId) {
+        ArrayList<String> lines = FileHandler.retrieve(SALES_PATH);
+
+        String salePrefix = SALE_TYPE + "|" + saleId + "|";
+        String itemPrefix = ITEM_TYPE + "|" + saleId + "|";
+
+        boolean removed = lines.removeIf(line ->
+            line.startsWith(salePrefix)
+                || line.startsWith(itemPrefix)
+        );
+
+        if (removed) {
+            FileHandler.writeAll(lines, SALES_PATH);
         }
     }
 
     public void markVoided(String saleId) {
         String prefix = SALE_TYPE + "|" + saleId + "|";
 
-        String oldLine = FileHandler.retrieve(SALES_PATH).stream()
-                .filter(line -> line.startsWith(prefix))
-                .findFirst()
-                .orElseThrow(() -> new PharmacyException("Sale " + saleId + " was not found in storage."));
+        String oldLine = FileHandler.retrieve(SALES_PATH).stream().filter(line -> line.startsWith(prefix)).findFirst().orElseThrow(() -> new PharmacyException("Sale " + saleId + " was not found in storage."));
 
         String[] f = oldLine.split("\\|", -1);
         String newLine = String.join("|", f[0], f[1], f[2], f[3], f[4], VOIDED_STATUS);
@@ -159,7 +171,6 @@ public class SaleRepository {
     }
 
     private static Sale parseSale(String[] f) {
-        // Older files have 5 fields (no status column); newer ones have 6.
         if (f.length != SALE_FIELDS && f.length != SALE_FIELDS_WITH_STATUS) {
             throw new FileStorageException(f);
         }
